@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ลอยกระทง · Live</title>
+  <link rel="stylesheet" href="css/game.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <main id="stage" class="stage">
+    <canvas id="scene"></canvas>
+    <canvas id="scene3d"></canvas>
+    <canvas id="scene-top"></canvas>
+    <div id="hud" class="hud"></div>
+  </main>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
+

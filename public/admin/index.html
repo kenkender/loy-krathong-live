@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>แผงควบคุม · ลอยกระทง Live</title>
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">ลอยกระทง<span>Live Control</span></div>
+    <div class="top-right">
+      <span id="modeBadge" class="badge">—</span>
+      <span id="overall" class="status-pill" data-level="ok">กำลังโหลด…</span>
+      <a class="btn ghost" href="/game/?debug=1" target="_blank">เปิดหน้าเกม</a>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section id="kpis" class="kpis"></section>
+
+    <section class="panel">
+      <h2>สุขภาพระบบ</h2>
+      <ul id="components" class="components"></ul>
+      <h3>การแจ้งเตือน</h3>
+      <ul id="alerts" class="alerts"></ul>
+    </section>
+
+    <section class="panel">
+      <h2>ควบคุม</h2>
+      <div id="controls"></div>
+    </section>
+
+    <section class="panel tall">
+      <h2>เหตุการณ์สด <small id="eventCount"></small></h2>
+      <ul id="events" class="events"></ul>
+    </section>
+
+    <section class="panel tall">
+      <h2>บัญชีของขวัญและเงินทำบุญ</h2>
+      <div id="ledger"></div>
+      <h3>บันทึกระบบ</h3>
+      <ul id="logs" class="logs"></ul>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
+

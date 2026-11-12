@@ -1,0 +1,18 @@
+{
+  "_note": "ปรับระดับกระทงและตัวเลขประมาณการได้ที่นี่ โดยไม่ต้องแก้โค้ด",
+  "freeCooldownSec": 45,
+  "meritSharePercent": 20,
+  "estimatedThbPerDiamond": 0.2,
+  "tiers": [
+    { "level": 0, "name": "กระทงใบตอง",       "minDiamonds": 0,    "label": "ฟรี" },
+    { "level": 1, "name": "กระทงดอกไม้",      "minDiamonds": 1,    "label": "1+" },
+    { "level": 2, "name": "กระทงโคมลอย",      "minDiamonds": 30,   "label": "30+" },
+    { "level": 3, "name": "กระทงทองมงคล",     "minDiamonds": 300,  "label": "300+" },
+    { "level": 4, "name": "มหากระทงสวรรค์",   "minDiamonds": 1500, "label": "1,500+" }
+  ],
+  "genderKeywords": {
+    "male":   ["ชาย", "male", "boy", "ผู้ชาย", "ผช", "นาย", "หนุ่ม", "m"],
+    "female": ["หญิง", "female", "girl", "ผู้หญิง", "ผญ", "นาง", "สาว", "f"]
+  }
+}
+

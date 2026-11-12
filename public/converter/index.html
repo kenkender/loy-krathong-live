@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เครื่องมือรวมท่าทาง Mixamo เป็น .GLB (3D Converter)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body {
+      background: #0f172a;
+      color: #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    header {
+      background: #1e293b;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #334155;
+    }
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+    .badge {
+      background: #0284c7;
+      color: white;
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    .main-container {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 60px);
+    }
+    .sidebar {
+      width: 380px;
+      background: #1e293b;
+      padding: 20px;
+      border-right: 1px solid #334155;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+    .drop-zone {
+      border: 2px dashed #38bdf8;
+      border-radius: 12px;
+      padding: 30px 16px;
+      text-align: center;
+      background: #0f172a80;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      background: #38bdf815;
+      border-color: #7dd3fc;
+    }
+    .drop-zone svg {
+      width: 44px;
+      height: 44px;
+      stroke: #38bdf8;
+      margin-bottom: 8px;
+    }
+    .drop-zone p {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+    }
+    .drop-zone span {
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+    .file-input { display: none; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+    }
+    .btn-primary {
+      background: #0284c7;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #0369a1;
+    }
+    .btn-success {
+      background: #10b981;
+      color: white;
+      font-size: 1.05rem;
+      padding: 14px;
+    }
+    .btn-success:hover {
+      background: #059669;
+    }
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .section-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      margin-top: 8px;
+    }
+    .file-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+    .file-item {
+      background: #0f172a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #334155;
+    }
+    .file-item.loaded {
+      border-left: 3px solid #10b981;
+    }
+    .anim-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .anim-btn {
+      background: #334155;
+      color: #e2e8f0;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border: 1px solid #475569;
+      text-align: left;
+    }
+    .anim-btn:hover {
+      background: #475569;
+    }
+    .anim-btn.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: white;
+      font-weight: bold;
+    }
+    .status-box {
+      background: #0f172a;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+    }
+    .viewport {
+      flex: 1;
+      position: relative;
+      background: radial-gradient(circle at center, #1e293b 0%, #090d16 100%);
+    }
+    #renderCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .viewport-overlay {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: #0f172ab0;
+      backdrop-filter: blur(8px);
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+      border: 1px solid #334155;
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <header>
+    <h1>เครื่องมือแปลงและรวมท่าทาง Mixamo ➔ .GLB</h1>
+    <span class="badge">ทำงานในเครื่อง 100% ฟรี ไม่ต้องอัปโหลด</span>
+  </header>
+
+  <div class="main-container">
+    <div class="sidebar">
+      <div class="drop-zone" id="dropZone">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <p><strong>คลิกเพื่อเลือกไฟล์ หรือ ลากไฟล์มาวางที่นี่</strong></p>
+        <span>(เลือกไฟล์ .fbx ทั้งหมดของ amy หรือ aj พร้อมกัน)</span>
+      </div>
+      <input type="file" id="fileInput" class="file-input" multiple accept=".fbx">
+
+      <div class="status-box" id="statusBox">
+        รอเลือกไฟล์ .fbx...
+      </div>
+
+      <div class="section-title">ไฟล์ที่โหลดเข้ามา (<span id="fileCount">0</span>)</div>
+      <div class="file-list" id="fileList"></div>
+
+      <div class="section-title">ทดสอบท่าทางอนิเมชัน</div>
+      <div class="anim-buttons" id="animButtons">
+        <span style="grid-column: 1 / -1; font-size: 0.8rem; color: #64748b;">(ปุ่มท่าทางจะแสดงขึ้นมาหลังโหลดไฟล์เสร็จ)</span>
+      </div>
+
+      <button id="downloadBtn" class="btn btn-success" disabled style="margin-top: auto;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        ดาวน์โหลดไฟล์ .GLB ทันที
+      </button>
+    </div>
+
+    <div class="viewport">
+      <canvas id="renderCanvas"></canvas>
+      <div class="viewport-overlay">
+        คลิกเมาส์ซ้ายลาก = หมุนมุมมอง | คลิกขวาลาก = ขยับตำแหน่ง | เลื่อนลูกกลิ้ง = ซูมเข้า/ออก
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+    import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+
+    const canvas = document.getElementById('renderCanvas');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const statusBox = document.getElementById('statusBox');
+    const fileListEl = document.getElementById('fileList');
+    const fileCountEl = document.getElementById('fileCount');
+    const animButtonsEl = document.getElementById('animButtons');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    // Setup Three.js
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
+    camera.position.set(0, 1.3, 3.2);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 0.9, 0);
+
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
+    hemiLight.position.set(0, 20, 0);
+    scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    dirLight.position.set(3, 10, 5);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    const grid = new THREE.GridHelper(10, 20, 0x38bdf8, 0x334155);
+    grid.position.y = 0;
+    scene.add(grid);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = canvas.clientWidth / canvas.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    });
+
+    let mixer = null;
+    let activeAction = null;
+    let mainModel = null;
+    let characterPrefix = 'character';
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = clock.getDelta();
+      if (mixer) mixer.update(dt);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Event Handlers for Files
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      handleFiles(Array.from(e.dataTransfer.files));
+    });
+    fileInput.addEventListener('change', (e) => {
+      handleFiles(Array.from(e.target.files));
+    });
+
+    function cleanAnimName(filename) {
+      const lower = filename.toLowerCase();
+      if (lower.includes('kneeling down') || lower.includes('kneeling_down')) return 'Kneeling_Down';
+      if (lower.includes('kneeling idle') || lower.includes('kneeling_idle')) return 'Kneeling_Idle';
+      if (lower.includes('praying')) return 'Praying';
+      if (lower.includes('standing')) return 'Standing';
+      if (lower.includes('walking_empty') || lower.includes('walking empty')) return 'Walking_Empty';
+      if (lower.includes('walking')) return 'Walking_Krathong';
+      return filename.replace(/\.fbx$/i, '').replace(/^[a-z0-9]+_/i, '');
+    }
+
+    async function handleFiles(files) {
+      const fbxFiles = files.filter(f => f.name.toLowerCase().endsWith('.fbx'));
+      if (fbxFiles.length === 0) {
+        statusBox.innerText = '❌ กรุณาเลือกไฟล์ที่เป็นนามสกุล .fbx เท่านั้นครับ';
+        return;
+      }
+
+      // Detect prefix (e.g., amy or aj)
+      const firstName = fbxFiles[0].name;
+      if (firstName.toLowerCase().startsWith('amy')) characterPrefix = 'amy';
+      else if (firstName.toLowerCase().startsWith('aj')) characterPrefix = 'aj';
+      else characterPrefix = firstName.split('_')[0] || 'character';
+
+      fileCountEl.innerText = fbxFiles.length;
+      fileListEl.innerHTML = '';
+      animButtonsEl.innerHTML = '';
+      downloadBtn.disabled = true;
+
+      statusBox.innerHTML = `⏳ กำลังโหลดและประมวลผล ${fbxFiles.length} ไฟล์...`;
+
+      // Clear previous model
+      if (mainModel) {
+        scene.remove(mainModel);
+        mainModel = null;
+      }
+      if (mixer) {
+        mixer.stopAllAction();
+        mixer = null;
+      }
+
+      const loader = new FBXLoader();
+      const loadedClips = [];
+
+      // Sort so that walking or standing is processed first as base skin
+      fbxFiles.sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        if (aName.includes('standing')) return -1;
+        if (bName.includes('standing')) return 1;
+        if (aName.includes('walking')) return -1;
+        return 0;
+      });
+
+      for (let i = 0; i < fbxFiles.length; i++) {
+        const file = fbxFiles[i];
+        const itemEl = document.createElement('div');
+        itemEl.className = 'file-item';
+        itemEl.innerHTML = `<span>${file.name}</span> <span style="color:#64748b;">กำลังอ่าน...</span>`;
+        fileListEl.appendChild(itemEl);
+
+        try {
+          const buffer = await file.arrayBuffer();
+          const fbxObj = loader.parse(buffer, '');
+
+          // Check if this object has mesh/skin to be the main model
+          if (!mainModel) {
+            let hasMesh = false;
+            fbxObj.traverse(child => {
+              if (child.isMesh || child.isSkinnedMesh) {
+                hasMesh = true;
+                child.castShadow = true;
+                child.receiveShadow = true;
+              }
+            });
+            if (hasMesh) {
+              mainModel = fbxObj;
+            }
+          }
+
+          // Extract animation
+          if (fbxObj.animations && fbxObj.animations.length > 0) {
+            const clip = fbxObj.animations[0].clone();
+            clip.name = cleanAnimName(file.name);
+            loadedClips.push(clip);
+            itemEl.classList.add('loaded');
+            itemEl.querySelector('span:last-child').innerHTML = `<span style="color:#10b981;">✓ ${clip.name}</span>`;
+          } else {
+            itemEl.querySelector('span:last-child').innerHTML = `<span style="color:#f59e0b;">(ไม่มีอนิเมชัน)</span>`;
+          }
+        } catch (err) {
+          console.error(err);
+          itemEl.querySelector('span:last-child').innerHTML = `<span style="color:#ef4444;">ผิดพลาด</span>`;
+        }
+      }
+
+      if (!mainModel) {
+        statusBox.innerText = '❌ ไม่พบโครงสร้างโมเดลตัวละครในไฟล์ที่เลือก';
+        return;
+      }
+
+      // Scale model if needed (Mixamo is usually in cm, so scale down to meters if ~100)
+      const box = new THREE.Box3().setFromObject(mainModel);
+      const size = box.getSize(new THREE.Vector3());
+      if (size.y > 10) {
+        mainModel.scale.setScalar(0.01);
+      }
+
+      // Center model
+      box.setFromObject(mainModel);
+      const center = box.getCenter(new THREE.Vector3());
+      mainModel.position.x = -center.x;
+      mainModel.position.z = -center.z;
+      mainModel.position.y = -box.min.y;
+
+      // Assign all clips to mainModel
+      mainModel.animations = loadedClips;
+      scene.add(mainModel);
+
+      // Setup mixer and animation buttons
+      mixer = new THREE.AnimationMixer(mainModel);
+      animButtonsEl.innerHTML = '';
+
+      loadedClips.forEach((clip, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'anim-btn';
+        btn.innerText = `▶ ${clip.name}`;
+        btn.onclick = () => playClip(clip, btn);
+        animButtonsEl.appendChild(btn);
+
+        if (idx === 0) {
+          playClip(clip, btn);
+        }
+      });
+
+      statusBox.innerHTML = `✅ ประมวลผลสำเร็จ! รวมได้ <strong>${loadedClips.length}</strong> ท่าทาง`;
+      downloadBtn.disabled = false;
+      downloadBtn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        ดาวน์โหลด ${characterPrefix}.glb (${loadedClips.length} ท่า)
+      `;
+    }
+
+    function playClip(clip, activeBtn) {
+      if (!mixer) return;
+      document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const nextAction = mixer.clipAction(clip);
+      if (activeAction !== nextAction) {
+        if (activeAction) activeAction.fadeOut(0.2);
+        nextAction.reset().fadeIn(0.2).play();
+        activeAction = nextAction;
+      }
+    }
+
+    // Export to GLB
+    downloadBtn.addEventListener('click', () => {
+      if (!mainModel) return;
+
+      statusBox.innerText = '⏳ กำลังสร้างไฟล์ .GLB... กรุณารอสักครู่';
+      downloadBtn.disabled = true;
+
+      const exporter = new GLTFExporter();
+      exporter.parse(
+        mainModel,
+        (gltf) => {
+          const blob = new Blob([gltf], { type: 'model/gltf-binary' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          const outName = `${characterPrefix}.glb`;
+          link.download = outName;
+          link.click();
+
+          statusBox.innerHTML = `🎉 ดาวน์โหลด <strong>${outName}</strong> เรียบร้อยแล้ว!`;
+          downloadBtn.disabled = false;
+        },
+        (error) => {
+          console.error(error);
+          statusBox.innerText = '❌ เกิดข้อผิดพลาดในการสร้างไฟล์ GLB';
+          downloadBtn.disabled = false;
+        },
+        {
+          binary: true,
+          animations: mainModel.animations
+        }
+      );
+    });
+  </script>
+</body>
+</html>
+
