@@ -4,8 +4,12 @@ const TIER_COLOR = ['#ffffff', '#ffd9e6', '#ffe9b0', '#ffd876', '#fff2b8'];
 export function drawNameTag(ctx, L, ch) {
   if (ch.state === 3) return; // ไม่แสดงตอนเดินออก
   const u = L.unit;
-  const name = ch.job.user.name;
-  const y = ch.y - 300 * L.charScale;
+  const name = ch.job?.user?.name || 'ผู้ร่วมงาน';
+  // คำนวณความสูงป้ายชื่อให้อยู่ใกล้หัวตัวละครพอดี ไม่ลอยขึ้นไปบนฟ้า
+  const isKneeling = ch.state === 1 || ch.state === 2;
+  const fallbackH = (isKneeling ? 135 : 220) * u;
+  const y = typeof ch.customHeadY === 'number' ? ch.customHeadY : ch.y - (fallbackH + 20 * u);
+
   ctx.save();
   ctx.font = `700 ${26 * u}px "Leelawadee UI","Noto Sans Thai",sans-serif`;
   const w = ctx.measureText(name).width + 36 * u;

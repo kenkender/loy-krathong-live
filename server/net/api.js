@@ -6,15 +6,27 @@ import { logger } from '../core/logger.js';
 import { metrics } from '../core/metrics.js';
 import { giftConfig, reloadGifts } from '../core/gifts.js';
 import { buildSnapshot } from '../core/status.js';
+import { getSceneConfig, updateSceneConfig, listAvailableModels, saveModelBuffer, loadSceneConfig } from '../core/scene.js';
 
 export function createApi(hub) {
   const router = express.Router();
-  router.use(express.json({ limit: '10kb' }));
+  router.use(express.json({ limit: '50kb' }));
 
   /** ข้อมูลสาธารณะสำหรับหน้าเกม (ไม่มีข้อมูลละเอียดอ่อน) */
   router.get('/public-config', (_req, res) => {
     const g = giftConfig();
-    res.json({ mode: sources.mode, tiers: g.tiers, meritSharePercent: g.meritSharePercent, freeCooldownSec: g.freeCooldownSec });
+    res.json({
+      mode: sources.mode,
+      tiers: g.tiers,
+      meritSharePercent: g.meritSharePercent,
+      freeCooldownSec: g.freeCooldownSec,
+      scene: getSceneConfig(),
+      models: listAvailableModels(),
+    });
+  });
+
+  router.get('/scene', (_req, res) => {
+    res.json({ scene: getSceneConfig(), models: listAvailableModels() });
   });
 
   router.get('/health', (_req, res) => {
@@ -73,7 +85,115 @@ export function createApi(hub) {
 
   admin.post('/config/reload', (_req, res) => {
     reloadGifts();
-    logger.info('admin', 'โหลด config/gifts.json ใหม่');
+    const s = loadSceneConfig();
+    hub.broadcastGame({ type: 'scene-update', data: s });
+    logger.info('admin', 'โหลด config/gifts.json และ config/scene.json ใหม่');
+    res.json({ ok: true, scene: s });
+  });
+
+  admin.get('/scene', (_req, res) => {
+    res.json({ scene: getSceneConfig(), models: listAvailableModels() });
+  });
+
+  admin.post('/scene', (req, res) => {
+    const updated = updateSceneConfig(req.body || {});
+    hub.broadcastGame({ type: 'scene-update', data: updated });
+    logger.info('admin', 'อัปเดตการตั้งค่าฉากและตัวละคร', { theme: updated.theme, female: updated.femaleModel, male: updated.maleModel });
+    res.json({ ok: true, scene: updated, models: listAvailableModels() });
+  });
+
+  admin.post('/models/save', express.raw({ type: 'application/octet-stream', limit: '250mb' }), (req, res) => {
+    try {
+      const name = String(req.query.name || 'custom_model.glb');
+      const role = String(req.query.role || '');
+      const spawnNow = req.query.spawn === '1';
+      if (!req.body || !req.body.length) {
+        return res.status(400).json({ error: 'ไม่พบข้อมูลไฟล์ .glb' });
+      }
+      const saved = saveModelBuffer(name, req.body);
+      const patch = {};
+      if (!role || role === 'character') {
+        patch.addCharacterUrl = saved.url;
+      } else if (role === 'female') {
+        patch.femaleModel = saved.url;
+        patch.addCharacterUrl = saved.url;
+      } else if (role === 'male') {
+        patch.maleModel = saved.url;
+        patch.addCharacterUrl = saved.url;
+      } else if (role === 'leftProp') {
+        patch.leftPropModel = saved.url;
+      } else if (role === 'rightProp') {
+        patch.rightPropModel = saved.url;
+      }
+
+      const updated = Object.keys(patch).length ? updateSceneConfig(patch) : getSceneConfig();
+      hub.broadcastGame({ type: 'scene-update', data: updated });
+
+      if (spawnNow && (!role || role === 'character' || role === 'female' || role === 'male')) {
+        hub.broadcastGame({
+          type: 'krathong',
+          data: {
+            id: `preview-${Date.now()}`,
+            user: { id: 'admin', name: saved.name.replace(/\.glb$/i, '') },
+            gender: role === 'male' ? 'male' : 'female',
+            tier: 3,
+            modelUrl: saved.url,
+          },
+        });
+      }
+
+      logger.info('admin', `บันทึกโมเดล ${saved.name} (${saved.sizeMB} MB) สำเร็จ`, { role });
+      res.json({ ok: true, model: saved, scene: updated, models: listAvailableModels() });
+    } catch (e) {
+      logger.error('admin', 'บันทึกโมเดลไม่สำเร็จ', { error: e.message });
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  admin.post('/spawn', (req, res) => {
+    const { user, gender, tier, modelUrl } = req.body || {};
+    const job = {
+      id: `admin-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      user: { id: 'admin-spawn', name: String(user || 'แขกกิตติมศักดิ์').slice(0, 30) },
+      gender: gender === 'male' ? 'male' : 'female',
+      tier: Math.min(4, Math.max(0, Number(tier) || 0)),
+      modelUrl: modelUrl ? String(modelUrl) : undefined,
+    };
+    hub.broadcastGame({ type: 'krathong', data: job });
+    logger.info('admin', `ปล่อยตัวละครเข้าฉาก: ${job.user.name} (${job.gender}, ระดับ ${job.tier})`);
+    res.json({ ok: true, job });
+  });
+
+  admin.post('/spawn-wave', (req, res) => {
+    const count = Math.min(25, Math.max(2, Number(req.body?.count) || 10));
+    const names = [
+      'ต้นกล้า', 'น้องมายด์', 'ใบบัว', 'ปลายฟ้า', 'มะลิ',
+      'นุ่น', 'สุชาติ', 'แพรวา', 'เจ้าบุญ', 'ป้าสมศรี',
+      'ตะวัน', 'ใบเตย', 'พิทักษ์', 'แก้วตา', 'กานดา'
+    ];
+    const models = listAvailableModels().filter(
+      (m) => !/pagoda|mandapa|prop|temple|wat_/i.test(m.name)
+    );
+    for (let i = 0; i < count; i++) {
+      const name = names[i % names.length];
+      const model = models.length ? models[i % models.length] : null;
+      const job = {
+        id: `wave-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+        user: { id: `wave-user-${i}`, name },
+        gender: i % 2 === 0 ? 'female' : 'male',
+        tier: (i % 4) + 1,
+        modelUrl: model ? model.url : undefined,
+      };
+      hub.broadcastGame({ type: 'krathong', data: job });
+    }
+    logger.info('admin', `จำลองคนโดเนทเข้าฉากเป็นขบวนต่อแถว ${count} คน`);
+    res.json({ ok: true, count });
+  });
+
+  admin.post('/fx', (req, res) => {
+    const { kind } = req.body || {};
+    hub.broadcastGame({ type: 'fx', data: { kind: String(kind || 'fireworks') } });
+    logger.info('admin', `สั่งเอฟเฟกต์พิเศษ: ${kind}`);
     res.json({ ok: true });
   });
 

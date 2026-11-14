@@ -25,21 +25,83 @@ function limb(ctx, x1, y1, x2, y2, w, color) {
 
 /** ตัวละครสไตล์ชิบิ วาดด้วยโค้ดทั้งหมด (ไม่ต้องใช้ไฟล์ภาพ) */
 export class Character {
-  constructor(L, job, slotX, tierStyleDraw = drawKrathong) {
+  constructor(L, job, slotX, sceneConfig = {}, tierStyleDraw = drawKrathong, slotIndex = 0) {
+    if (typeof tierStyleDraw === 'number') {
+      slotIndex = tierStyleDraw;
+      tierStyleDraw = drawKrathong;
+    }
     this.L = L;
     this.job = job;
+    this.slotIndex = typeof slotIndex === 'number' ? slotIndex : 0;
+    this.slot = this.slotIndex;
     this.gender = job.gender === 'female' ? 'female' : 'male';
     this.o = OUTFIT[this.gender];
-    this.x = -120 * L.unit;
-    this.targetX = slotX;
-    this.y = L.walkY;
+    this.walkDirection = sceneConfig.walkDirection || 'left-to-right';
+    this.activityMode = sceneConfig.activityMode || 'loy-krathong';
+    this.depthScale = 1;
+    this.zOffset = 0;
+    this.walkingUp = false;
+
+    const u = L.unit;
+    const isPortrait = L.mode === 'portrait';
+    const altarY = L.waterTop + 58 * u;
+    // จุดเบาะรองกราบไหว้อยู่ก่อนถึงพานทองวางเทียน (+44 * u) เพื่อไม่ให้ตัวละครขึ้นไปเหยียบบนฐานบูชา
+    const cushionY = altarY + 44 * u;
+
+    if (this.activityMode === 'temple-blessing') {
+      // โหมดไหว้พระขอพร: เดินเข้าตามแนวเส้นทางเดินขบวนบุญสีทอง 5 สาย
+      this.targetX = slotX;
+      this.targetY = cushionY;
+      const baseStart = isPortrait ? 76 * u : 44 * u;
+      const laneSpacing = isPortrait ? 86 * u : 46 * u;
+      this.laneY = this.targetY + baseStart + this.slotIndex * laneSpacing;
+
+      // เริ่มเดินจากซ้ายจอตามแนวระดับความสูงของช่องตนเอง ถือถ้วยเทียนทองคำ
+      this.x = -140 * u;
+      this.y = this.laneY;
+      this.dir = 1;
+      this.exitDir = 1;
+      this.depthScale = 1.0 + (this.slotIndex * 0.045);
+    } else if (this.walkDirection === 'right-to-left') {
+      this.targetX = slotX;
+      this.targetY = L.walkY;
+      this.x = L.W + 120 * u;
+      this.y = L.walkY;
+      this.dir = -1;
+      this.exitDir = -1;
+    } else if (this.walkDirection === 'back-to-front') {
+      this.targetX = slotX;
+      this.targetY = L.walkY;
+      this.x = slotX + (Math.random() - 0.5) * 40 * u;
+      this.y = L.walkY - 64 * u;
+      this.depthScale = 0.74;
+      this.dir = slotX < L.W * 0.5 ? 1 : -1;
+      this.exitDir = slotX < L.W * 0.5 ? -1 : 1;
+    } else if (this.walkDirection === 'center-spread') {
+      this.targetX = slotX;
+      this.targetY = L.walkY;
+      this.x = L.W * 0.5;
+      this.y = L.walkY - 44 * u;
+      this.depthScale = 0.82;
+      this.dir = slotX >= L.W * 0.5 ? 1 : -1;
+      this.exitDir = slotX >= L.W * 0.5 ? 1 : -1;
+    } else {
+      // left-to-right (ค่าเริ่มต้น)
+      this.targetX = slotX;
+      this.targetY = L.walkY;
+      this.x = -120 * u;
+      this.y = L.walkY;
+      this.dir = 1;
+      this.exitDir = 1;
+    }
+
+    this.vx = 0;
     this.state = STATE.WALK_IN;
     this.timer = 0;
     this.walk = Math.random() * TAU;
-    this.dir = 1;
     this.released = false;
     this.drawKrathong = tierStyleDraw;
-    this.speed = 250 * L.unit;
+    this.speed = 250 * u;
     this.blink = Math.random() * 4;
   }
 
@@ -47,51 +109,163 @@ export class Character {
     return this.state === STATE.DONE;
   }
 
-  /** ตำแหน่งมือขณะถือกระทง (พิกัดฉาก) */
+  /** ตำแหน่งมือขณะถือกระทง/ถ้วยเทียน (พิกัดฉาก) */
   get handPos() {
     if (this.customHandPos) return this.customHandPos;
     const s = this.L.charScale;
+    if (this.walkingUp) {
+      return { x: this.x, y: this.y - 92 * s };
+    }
     return { x: this.x + this.dir * 22 * s, y: this.y - 92 * s };
   }
 
-  update(dt, { onRelease }) {
+  update(dt, { onRelease, sceneConfig, allCharacters }) {
+    if (sceneConfig) {
+      this.activityMode = sceneConfig.activityMode || this.activityMode;
+    }
     this.timer += dt;
     this.blink -= dt;
     if (this.blink < -0.14) this.blink = 2 + Math.random() * 3;
 
+    const u = this.L.unit;
+    const tier = Math.min(4, Math.max(0, this.job?.tier || 0));
+    const bowDuration = this.activityMode === 'party-dance' ? 2.6 + tier * 0.6 : BOW_TIME;
+    const prayDuration = this.activityMode === 'party-dance' ? 2.8 + tier * 0.8 : PRAY_TIME;
+
     switch (this.state) {
       case STATE.WALK_IN: {
         this.walk += dt * 9;
-        this.x += this.speed * dt;
-        if (this.x >= this.targetX) {
-          this.x = this.targetX;
-          this.state = STATE.BOW;
-          this.timer = 0;
+        if (this.activityMode === 'temple-blessing') {
+          // ตรวจสอบว่ามีคนข้างหน้าที่อยู่ในเลน/ช่องเดียวกันหรือไม่ (ระบบต่อแถวขบวนบุญ)
+          let leader = null;
+          if (Array.isArray(allCharacters)) {
+            for (const other of allCharacters) {
+              if (other !== this && other.slotIndex === this.slotIndex && !other.done) {
+                if (other.state > this.state) {
+                  leader = other;
+                } else if (other.state === this.state) {
+                  if (this.walkingUp && other.walkingUp && other.y < this.y) {
+                    leader = other;
+                  } else if (!this.walkingUp && !other.walkingUp && other.x > this.x) {
+                    leader = other;
+                  } else if (other.walkingUp && !this.walkingUp) {
+                    leader = other;
+                  }
+                }
+              }
+            }
+          }
+
+          // ขบวนบุญเดินตามแนวเส้นสีแดง:
+          // เฟส 1: เดินตรงในแนวนอนตามเลนความสูงของตนเอง (laneY) ไปจนถึงตำแหน่ง X ของเบาะไหว้ (targetX)
+          if (!this.walkingUp) {
+            this.dir = 1;
+            this.y = this.laneY;
+            const step = this.speed * dt;
+            let maxX = this.targetX;
+            if (leader && !leader.walkingUp) {
+              maxX = Math.min(maxX, leader.x - 72 * u);
+            }
+            if (this.x + step >= maxX) {
+              this.x = maxX;
+              if (this.x >= this.targetX) {
+                this.walkingUp = true; // เลี้ยว 90 องศาขึ้นข้างบนมุ่งสู่เบาะรองกราบ
+                this.vx = 0;
+              } else {
+                this.vx = 0; // ยืนรอคนข้างหน้าเดินพ้นทาง
+              }
+            } else {
+              this.x += step;
+              this.vx = this.speed;
+            }
+          } else {
+            // เฟส 2: เลี้ยว 90 องศาเดินขึ้นหน้าตรงไปยังเบาะรองกราบไหว้สีทอง (targetY)
+            this.x = this.targetX;
+            let targetStopY = this.targetY;
+            if (leader && leader.state !== STATE.WALK_OUT) {
+              if (leader.walkingUp) {
+                targetStopY = leader.y + 68 * u;
+              } else {
+                // คนข้างหน้ากำลังคุกเข่ากราบไหว้อยู่ที่เบาะ ให้ต่อแถวยืนรออยู่ด้านหลังเบาะ
+                targetStopY = this.targetY + 65 * u;
+              }
+            }
+
+            const dy = this.y - targetStopY;
+            const step = this.speed * dt;
+            if (dy <= step || dy < 2) {
+              this.y = targetStopY;
+              this.vx = 0;
+              if (targetStopY === this.targetY) {
+                // ถึงเบาะกราบไหว้แล้ว เริ่มคุกเข่ากราบไหว้องค์พระ
+                this.walkingUp = false;
+                this.isWaitingInQueue = false;
+                this.depthScale = 1.0;
+                this.state = STATE.BOW;
+                this.timer = 0;
+              } else {
+                // กำลังยืนถือถ้วยเทียนต่อแถวรอคิวอย่างสงบสำรวม
+                this.isWaitingInQueue = true;
+              }
+            } else {
+              this.y -= step;
+              this.vx = 0;
+              this.isWaitingInQueue = false;
+              // ค่อยๆ ปรับ Perspective ให้เข้าใกล้ขนาดมาตรฐาน 1.0 เมื่อถึงเบาะ
+              const totalDist = Math.max(1, this.laneY - this.targetY);
+              const progress = Math.min(1, Math.max(0, (this.laneY - this.y) / totalDist));
+              const startScale = 1.0 + (this.slotIndex * 0.045);
+              this.depthScale = startScale * (1 - progress) + 1.0 * progress;
+            }
+          }
+        } else {
+          const dx = this.targetX - this.x;
+          const dy = this.targetY - this.y;
+          const dist = Math.hypot(dx, dy);
+          const step = this.speed * dt;
+          if (dist <= step || dist < 2) {
+            this.x = this.targetX;
+            this.y = this.targetY;
+            this.depthScale = 1;
+            this.vx = 0;
+            this.state = STATE.BOW;
+            this.timer = 0;
+          } else {
+            this.vx = (dx / dist) * this.speed;
+            this.x += (dx / dist) * step;
+            this.y += (dy / dist) * step;
+            const totalY = 64 * this.L.unit;
+            const remY = Math.max(0, this.targetY - this.y);
+            this.depthScale = 1 - Math.min(0.28, (remY / totalY) * 0.26);
+          }
         }
         break;
       }
       case STATE.BOW:
-        // ปล่อยกระทงลงผิวน้ำที่ 2.2 วินาที (ขณะนั่งคุกเข่าอยู่ริมน้ำ)
-        if (this.timer >= 2.2 && !this.released) {
+        // ปล่อยกระทง / ส่งคำอธิษฐาน / เอฟเฟกต์เต้นที่จังหวะไฮไลท์
+        if (this.timer >= 1.8 && !this.released) {
           this.released = true;
           onRelease?.(this);
         }
-        if (this.timer >= BOW_TIME) {
+        if (this.timer >= bowDuration) {
           this.state = STATE.PRAY;
           this.timer = 0;
         }
         break;
       case STATE.PRAY:
-        if (this.timer >= PRAY_TIME) {
+        if (this.timer >= prayDuration) {
           this.state = STATE.WALK_OUT;
-          this.dir = 1; // เดินต่อไปข้างหน้าทางขวา
+          this.dir = this.exitDir || 1;
           this.timer = 0;
         }
         break;
       case STATE.WALK_OUT:
         this.walk += dt * 9;
-        this.x += this.speed * dt; // เดินตรงไปข้างหน้าข้ามสะพานออกทางขวา
-        if (this.x > this.L.W + 180 * this.L.unit) this.state = STATE.DONE;
+        this.vx = this.dir * this.speed;
+        this.x += this.vx * dt;
+        if (this.x > this.L.W + 180 * this.L.unit || this.x < -180 * this.L.unit) {
+          this.state = STATE.DONE;
+        }
         break;
       default:
     }

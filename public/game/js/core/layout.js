@@ -21,10 +21,12 @@ export function createLayout(mode) {
     waterTop: walkY + 22 * unit,
     moon: { x: W * (portrait ? 0.74 : 0.78), y: H * (portrait ? 0.17 : 0.2), r: 92 * unit },
     charScale: 1.18 * unit,
-    // จุดยืนไหว้/ปล่อยกระทง (สูงสุด 3 คนพร้อมกัน)
-    slots: portrait ? [0.2, 0.44, 0.68].map((r) => r * W) : [0.18, 0.4, 0.62].map((r) => r * W),
-    lanes: [0.0, 0.055, 0.11].map((o) => walkY + (58 + o * H * 1.1) * unit),
-    maxActive: 3,
+    // จุดยืนไหว้/ปล่อยกระทง (ขยายเป็น 5 ตำแหน่งตามแนวสะพานท่าน้ำ)
+    slots: portrait
+      ? [0.12, 0.30, 0.48, 0.66, 0.84].map((r) => r * W)
+      : [0.14, 0.32, 0.50, 0.68, 0.86].map((r) => r * W),
+    lanes: [0.0, 0.035, 0.07, 0.105, 0.14].map((o) => walkY + (58 + o * H * 1.1) * unit),
+    maxActive: portrait ? 12 : 10,
   };
 }
 

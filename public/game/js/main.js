@@ -56,6 +56,11 @@ async function boot() {
   stage.style.height = `${engine.L.H}px`;
   fitStage(stage, engine.L.W, engine.L.H);
 
+  if (config.scene) {
+    engine.sceneConfig = { ...engine.sceneConfig, ...config.scene };
+    engine.char3D.sceneCfg = { ...engine.char3D.sceneCfg, ...config.scene };
+  }
+
   try {
     await engine.char3D.init(stage);
   } catch (err) {
@@ -68,6 +73,11 @@ async function boot() {
     onStatus: (s) => hud.setConnection(s),
     onMessage: (msg) => {
       if (msg.type === 'krathong') engine.enqueue(msg.data);
+      else if (msg.type === 'scene-update') {
+        hud.updateScene(msg.data);
+        engine.applySceneConfig(msg.data);
+      }
+      else if (msg.type === 'fx') engine.triggerFx(msg.data?.kind);
       else if (msg.type === 'clear') engine.clear();
       else if (msg.type === 'reload') location.reload();
     },

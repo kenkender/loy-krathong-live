@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>เครื่องมือรวมท่าทาง Mixamo เป็น .GLB (3D Converter)</title>
+  <title>Universal 3D Converter & Mixamo/VRoid Studio (ไม่จำกัดขนาดไฟล์)</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body {
@@ -16,43 +16,43 @@
     }
     header {
       background: #1e293b;
-      padding: 14px 24px;
+      padding: 12px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid #334155;
     }
     header h1 {
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       font-weight: 600;
       color: #38bdf8;
     }
     .badge {
       background: #0284c7;
       color: white;
-      font-size: 0.8rem;
-      padding: 4px 10px;
+      font-size: 0.78rem;
+      padding: 4px 12px;
       border-radius: 999px;
     }
     .main-container {
       display: flex;
       flex: 1;
-      height: calc(100vh - 60px);
+      height: calc(100vh - 54px);
     }
     .sidebar {
-      width: 380px;
+      width: 420px;
       background: #1e293b;
-      padding: 20px;
+      padding: 16px;
       border-right: 1px solid #334155;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
       overflow-y: auto;
     }
     .drop-zone {
       border: 2px dashed #38bdf8;
       border-radius: 12px;
-      padding: 30px 16px;
+      padding: 20px 14px;
       text-align: center;
       background: #0f172a80;
       cursor: pointer;
@@ -63,19 +63,21 @@
       border-color: #7dd3fc;
     }
     .drop-zone svg {
-      width: 44px;
-      height: 44px;
+      width: 36px;
+      height: 36px;
       stroke: #38bdf8;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .drop-zone p {
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       color: #cbd5e1;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
     }
     .drop-zone span {
-      font-size: 0.8rem;
-      color: #64748b;
+      font-size: 0.76rem;
+      color: #94a3b8;
+      display: block;
+      line-height: 1.4;
     }
     .file-input { display: none; }
     .btn {
@@ -83,10 +85,10 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 12px 18px;
+      padding: 10px 14px;
       border-radius: 8px;
       font-weight: 600;
-      font-size: 0.95rem;
+      font-size: 0.88rem;
       cursor: pointer;
       border: none;
       transition: all 0.15s ease;
@@ -95,41 +97,64 @@
       background: #0284c7;
       color: white;
     }
-    .btn-primary:hover {
+    .btn-primary:hover:not(:disabled) {
       background: #0369a1;
+    }
+    .btn-magic {
+      background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+      color: white;
+      width: 100%;
+      padding: 11px 14px;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    }
+    .btn-magic:hover:not(:disabled) {
+      filter: brightness(1.1);
     }
     .btn-success {
       background: #10b981;
       color: white;
-      font-size: 1.05rem;
-      padding: 14px;
+      font-size: 0.95rem;
+      padding: 12px;
+      width: 100%;
     }
-    .btn-success:hover {
+    .btn-success:hover:not(:disabled) {
       background: #059669;
+    }
+    .btn-warning {
+      background: #f59e0b;
+      color: #0f172a;
+      font-size: 0.9rem;
+      padding: 11px;
+      width: 100%;
+    }
+    .btn-warning:hover:not(:disabled) {
+      background: #d97706;
+      color: white;
     }
     .btn:disabled {
       opacity: 0.4;
       cursor: not-allowed;
     }
     .section-title {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       text-transform: uppercase;
       letter-spacing: 0.05em;
       color: #94a3b8;
-      margin-top: 8px;
+      margin-top: 4px;
+      font-weight: 600;
     }
     .file-list {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      max-height: 180px;
+      gap: 5px;
+      max-height: 145px;
       overflow-y: auto;
     }
     .file-item {
       background: #0f172a;
-      padding: 8px 12px;
+      padding: 7px 10px;
       border-radius: 6px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -141,17 +166,20 @@
     .anim-buttons {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      gap: 6px;
     }
     .anim-btn {
       background: #334155;
       color: #e2e8f0;
-      padding: 8px 10px;
+      padding: 7px 9px;
       border-radius: 6px;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       cursor: pointer;
       border: 1px solid #475569;
       text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .anim-btn:hover {
       background: #475569;
@@ -166,12 +194,51 @@
       background: #0f172a;
       padding: 10px 12px;
       border-radius: 6px;
-      font-size: 0.85rem;
+      font-size: 0.83rem;
       color: #cbd5e1;
       border: 1px solid #334155;
       min-height: 38px;
+      line-height: 1.45;
+    }
+    .export-panel {
+      margin-top: auto;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .export-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+    }
+    .btn-secondary {
+      background: #334155;
+      color: #f1f5f9;
+      font-size: 0.8rem;
+      padding: 8px;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: #475569;
+    }
+    .name-row {
       display: flex;
       align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: #94a3b8;
+    }
+    .name-input {
+      flex: 1;
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
     }
     .viewport {
       flex: 1;
@@ -191,7 +258,7 @@
       backdrop-filter: blur(8px);
       padding: 10px 16px;
       border-radius: 8px;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: #94a3b8;
       border: 1px solid #334155;
     }
@@ -200,16 +267,20 @@
   <script type="importmap">
   {
     "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      "three": "/vendor/three/build/three.module.js",
+      "three/addons/": "/vendor/three/examples/jsm/"
     }
   }
   </script>
 </head>
 <body>
   <header>
-    <h1>เครื่องมือแปลงและรวมท่าทาง Mixamo ➔ .GLB</h1>
-    <span class="badge">ทำงานในเครื่อง 100% ฟรี ไม่ต้องอัปโหลด</span>
+    <h1>เครื่องมือแปลงไฟล์ 3D อเนกประสงค์ (.VRM / .FBX / .GLB / .OBJ / .DAE / .STL / .PLY)</h1>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <a href="/admin/" target="_blank" style="color:#38bdf8;text-decoration:none;font-size:0.82rem;border:1px solid #334155;padding:4px 10px;border-radius:6px;">⚙ แผงควบคุม Admin</a>
+      <a href="/game/?debug=1" target="_blank" style="color:#10b981;text-decoration:none;font-size:0.82rem;border:1px solid #334155;padding:4px 10px;border-radius:6px;">🎮 เปิดหน้าเกม</a>
+      <span class="badge">ทำงานในเครื่อง 100% · ไม่จำกัดขนาดไฟล์</span>
+    </div>
   </header>
 
   <div class="main-container">
@@ -220,37 +291,63 @@
           <polyline points="17 8 12 3 7 8"/>
           <line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
-        <p><strong>คลิกเพื่อเลือกไฟล์ หรือ ลากไฟล์มาวางที่นี่</strong></p>
-        <span>(เลือกไฟล์ .fbx ทั้งหมดของ amy หรือ aj พร้อมกัน)</span>
+        <p><strong>คลิกเลือกไฟล์ หรือ ลากไฟล์มาวางที่นี่</strong></p>
+        <span>รองรับ <b>.vrm</b> (VRoid), <b>.fbx</b> (Mixamo), <b>.glb</b>, <b>.gltf</b>, <b>.obj</b>, <b>.dae</b>, <b>.stl</b>, <b>.ply</b><br>(เลือกหลายไฟล์พร้อมกันได้ ไม่จำกัดขนาดไฟล์)</span>
       </div>
-      <input type="file" id="fileInput" class="file-input" multiple accept=".fbx">
+      <input type="file" id="fileInput" class="file-input" multiple accept=".vrm,.fbx,.glb,.gltf,.obj,.dae,.stl,.ply">
 
       <div class="status-box" id="statusBox">
-        รอเลือกไฟล์ .fbx...
+        รอเลือกไฟล์ 3D (.vrm, .fbx, .glb, .obj ฯลฯ)...
       </div>
 
-      <div class="section-title">ไฟล์ที่โหลดเข้ามา (<span id="fileCount">0</span>)</div>
+      <button id="injectLoyKrathongBtn" class="btn btn-magic" disabled title="ดึงท่าลอยกระทงทั้ง 6 ท่าจากระบบใส่ให้ตัวละคร VRoid (.vrm) หรือ Mixamo โดยไม่ต้องอัปโหลดไปเว็บอื่น">
+        ✨ ใส่ท่าลอยกระทงครบ 6 ท่าให้ตัวละครนี้ทันที (1-Click)
+      </button>
+
+      <div class="section-title">ไฟล์และท่าทางที่โหลด (<span id="fileCount">0</span>)</div>
       <div class="file-list" id="fileList"></div>
 
-      <div class="section-title">ทดสอบท่าทางอนิเมชัน</div>
+      <div class="section-title">พรีวิวท่าทางอนิเมชัน</div>
       <div class="anim-buttons" id="animButtons">
-        <span style="grid-column: 1 / -1; font-size: 0.8rem; color: #64748b;">(ปุ่มท่าทางจะแสดงขึ้นมาหลังโหลดไฟล์เสร็จ)</span>
+        <span style="grid-column: 1 / -1; font-size: 0.78rem; color: #64748b;">(ปุ่มท่าทางจะแสดงหลังโหลดไฟล์ที่มีอนิเมชัน)</span>
       </div>
 
-      <button id="downloadBtn" class="btn btn-success" disabled style="margin-top: auto;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        ดาวน์โหลดไฟล์ .GLB ทันที
-      </button>
+      <div class="export-panel">
+        <div class="name-row">
+          <label for="outNameInput">ชื่อไฟล์:</label>
+          <input type="text" id="outNameInput" class="name-input" value="vroid" placeholder="เช่น vroid, kate, amy">
+          <select id="roleSelect" class="name-input" style="max-width:195px;">
+            <option value="character">➕ เพิ่มเป็นตัวละครในฉาก (ไม่ระบุเพศ)</option>
+            <option value="leftProp">ตั้งเป็น: วัตถุฉากซ้าย</option>
+            <option value="rightProp">ตั้งเป็น: วัตถุฉากขวา</option>
+            <option value="library">เก็บไว้ในคลังโมเดล</option>
+          </select>
+        </div>
+
+        <button id="sendToGameBtn" class="btn btn-primary" disabled style="width:100%;background:linear-gradient(135deg,#0284c7 0%,#10b981 100%);padding:12px;">
+          🚀 บันทึกเข้าเกมและส่งตัวละครเข้าฉากทันที!
+        </button>
+
+        <button id="downloadGlbBtn" class="btn btn-success" disabled>
+          ⬇ ดาวน์โหลดไฟล์ .GLB ลงคอมพิวเตอร์
+        </button>
+
+        <button id="downloadObjBtn" class="btn btn-warning" disabled>
+          ⬇ แปลงเป็น .OBJ (สำหรับอัปโหลดเข้า Mixamo ไม่ติดกระดูก)
+        </button>
+
+        <div class="export-grid">
+          <button id="downloadGltfBtn" class="btn btn-secondary" disabled>⬇ .GLTF</button>
+          <button id="downloadStlBtn" class="btn btn-secondary" disabled>⬇ .STL</button>
+          <button id="downloadPlyBtn" class="btn btn-secondary" disabled>⬇ .PLY</button>
+        </div>
+      </div>
     </div>
 
     <div class="viewport">
       <canvas id="renderCanvas"></canvas>
       <div class="viewport-overlay">
-        คลิกเมาส์ซ้ายลาก = หมุนมุมมอง | คลิกขวาลาก = ขยับตำแหน่ง | เลื่อนลูกกลิ้ง = ซูมเข้า/ออก
+        คลิกซ้ายลาก = หมุนมุมมอง | คลิกขวาลาก = เลื่อนตำแหน่ง | ลูกกลิ้งเมาส์ = ซูมเข้า/ออก
       </div>
     </div>
   </div>
@@ -259,7 +356,15 @@
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+    import { ColladaLoader } from 'three/addons/loaders/ColladaLoader.js';
+    import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+    import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
     import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+    import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
+    import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+    import { PLYExporter } from 'three/addons/exporters/PLYExporter.js';
 
     const canvas = document.getElementById('renderCanvas');
     const dropZone = document.getElementById('dropZone');
@@ -268,33 +373,41 @@
     const fileListEl = document.getElementById('fileList');
     const fileCountEl = document.getElementById('fileCount');
     const animButtonsEl = document.getElementById('animButtons');
-    const downloadBtn = document.getElementById('downloadBtn');
+    const outNameInput = document.getElementById('outNameInput');
+    const roleSelect = document.getElementById('roleSelect');
+    const sendToGameBtn = document.getElementById('sendToGameBtn');
+    const injectLoyKrathongBtn = document.getElementById('injectLoyKrathongBtn');
+    const downloadGlbBtn = document.getElementById('downloadGlbBtn');
+    const downloadObjBtn = document.getElementById('downloadObjBtn');
+    const downloadGltfBtn = document.getElementById('downloadGltfBtn');
+    const downloadStlBtn = document.getElementById('downloadStlBtn');
+    const downloadPlyBtn = document.getElementById('downloadPlyBtn');
 
     // Setup Three.js
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setSize(canvas.clientWidth, canvas.clientHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
-    camera.position.set(0, 1.3, 3.2);
+    const camera = new THREE.PerspectiveCamera(45, canvas.clientWidth / canvas.clientHeight, 0.05, 1000);
+    camera.position.set(0, 1.3, 3.0);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.target.set(0, 0.9, 0);
+    controls.target.set(0, 0.85, 0);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.5);
     hemiLight.position.set(0, 20, 0);
     scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.6);
     dirLight.position.set(3, 10, 5);
     dirLight.castShadow = true;
     scene.add(dirLight);
 
     const grid = new THREE.GridHelper(10, 20, 0x38bdf8, 0x334155);
-    grid.position.y = 0;
     scene.add(grid);
 
     window.addEventListener('resize', () => {
@@ -306,7 +419,8 @@
     let mixer = null;
     let activeAction = null;
     let mainModel = null;
-    let characterPrefix = 'character';
+    let isMainModelVRM = false;
+    let loadedClips = [];
     const clock = new THREE.Clock();
 
     function animate() {
@@ -318,7 +432,168 @@
     }
     animate();
 
-    // Event Handlers for Files
+    // Map Mixamo bone names -> VRM 0.0 / VRoid humanoid bone names (J_Bip_*)
+    const MIXAMO_TO_VRM_NODE = {
+      mixamorigHips: 'J_Bip_C_Hips',
+      mixamorigSpine: 'J_Bip_C_Spine',
+      mixamorigSpine1: 'J_Bip_C_Chest',
+      mixamorigSpine2: 'J_Bip_C_UpperChest',
+      mixamorigNeck: 'J_Bip_C_Neck',
+      mixamorigHead: 'J_Bip_C_Head',
+      mixamorigLeftShoulder: 'J_Bip_L_Shoulder',
+      mixamorigLeftArm: 'J_Bip_L_UpperArm',
+      mixamorigLeftForeArm: 'J_Bip_L_LowerArm',
+      mixamorigLeftHand: 'J_Bip_L_Hand',
+      mixamorigLeftHandThumb1: 'J_Bip_L_Thumb1',
+      mixamorigLeftHandThumb2: 'J_Bip_L_Thumb2',
+      mixamorigLeftHandThumb3: 'J_Bip_L_Thumb3',
+      mixamorigLeftHandIndex1: 'J_Bip_L_Index1',
+      mixamorigLeftHandIndex2: 'J_Bip_L_Index2',
+      mixamorigLeftHandIndex3: 'J_Bip_L_Index3',
+      mixamorigLeftHandMiddle1: 'J_Bip_L_Middle1',
+      mixamorigLeftHandMiddle2: 'J_Bip_L_Middle2',
+      mixamorigLeftHandMiddle3: 'J_Bip_L_Middle3',
+      mixamorigLeftHandRing1: 'J_Bip_L_Ring1',
+      mixamorigLeftHandRing2: 'J_Bip_L_Ring2',
+      mixamorigLeftHandRing3: 'J_Bip_L_Ring3',
+      mixamorigLeftHandPinky1: 'J_Bip_L_Little1',
+      mixamorigLeftHandPinky2: 'J_Bip_L_Little2',
+      mixamorigLeftHandPinky3: 'J_Bip_L_Little3',
+      mixamorigRightShoulder: 'J_Bip_R_Shoulder',
+      mixamorigRightArm: 'J_Bip_R_UpperArm',
+      mixamorigRightForeArm: 'J_Bip_R_LowerArm',
+      mixamorigRightHand: 'J_Bip_R_Hand',
+      mixamorigRightHandThumb1: 'J_Bip_R_Thumb1',
+      mixamorigRightHandThumb2: 'J_Bip_R_Thumb2',
+      mixamorigRightHandThumb3: 'J_Bip_R_Thumb3',
+      mixamorigRightHandIndex1: 'J_Bip_R_Index1',
+      mixamorigRightHandIndex2: 'J_Bip_R_Index2',
+      mixamorigRightHandIndex3: 'J_Bip_R_Index3',
+      mixamorigRightHandMiddle1: 'J_Bip_R_Middle1',
+      mixamorigRightHandMiddle2: 'J_Bip_R_Middle2',
+      mixamorigRightHandMiddle3: 'J_Bip_R_Middle3',
+      mixamorigRightHandRing1: 'J_Bip_R_Ring1',
+      mixamorigRightHandRing2: 'J_Bip_R_Ring2',
+      mixamorigRightHandRing3: 'J_Bip_R_Ring3',
+      mixamorigRightHandPinky1: 'J_Bip_R_Little1',
+      mixamorigRightHandPinky2: 'J_Bip_R_Little2',
+      mixamorigRightHandPinky3: 'J_Bip_R_Little3',
+      mixamorigLeftUpLeg: 'J_Bip_L_UpperLeg',
+      mixamorigLeftLeg: 'J_Bip_L_LowerLeg',
+      mixamorigLeftFoot: 'J_Bip_L_Foot',
+      mixamorigLeftToeBase: 'J_Bip_L_ToeBase',
+      mixamorigRightUpLeg: 'J_Bip_R_UpperLeg',
+      mixamorigRightLeg: 'J_Bip_R_LowerLeg',
+      mixamorigRightFoot: 'J_Bip_R_Foot',
+      mixamorigRightToeBase: 'J_Bip_R_ToeBase',
+    };
+
+    // Retarget a Mixamo AnimationClip onto a VRM (J_Bip_*) model using true T-pose bind matrices
+    function retargetMixamoClipToVRM(clip, sourceScene, vrmScene) {
+      const boneWorldRestQuat = new Map();
+      const boneWorldRestPos = new Map();
+
+      sourceScene.updateMatrixWorld(true);
+      let foundSkeleton = null;
+      sourceScene.traverse((child) => {
+        if (!foundSkeleton && child.isSkinnedMesh && child.skeleton) {
+          foundSkeleton = child.skeleton;
+        }
+      });
+
+      if (foundSkeleton && foundSkeleton.bones && foundSkeleton.boneInverses) {
+        for (let i = 0; i < foundSkeleton.bones.length; i++) {
+          const bone = foundSkeleton.bones[i];
+          const inv = foundSkeleton.boneInverses[i];
+          if (!bone || !inv) continue;
+          const bindMat = inv.clone().invert();
+          const pos = new THREE.Vector3();
+          const quat = new THREE.Quaternion();
+          const scl = new THREE.Vector3();
+          bindMat.decompose(pos, quat, scl);
+          const cleanName = bone.name.replace(/^.*[:|]/, '');
+          boneWorldRestQuat.set(cleanName, quat);
+          boneWorldRestPos.set(cleanName, pos);
+        }
+      }
+
+      // Fallback to scene node world transforms if any bone wasn't in skeleton
+      sourceScene.traverse((node) => {
+        const cleanName = node.name.replace(/^.*[:|]/, '');
+        if (!boneWorldRestQuat.has(cleanName)) {
+          const q = new THREE.Quaternion();
+          const p = new THREE.Vector3();
+          node.getWorldQuaternion(q);
+          node.getWorldPosition(p);
+          boneWorldRestQuat.set(cleanName, q);
+          boneWorldRestPos.set(cleanName, p);
+        }
+      });
+
+      const mixamoHipsY = Math.abs(boneWorldRestPos.get('mixamorigHips')?.y || 70);
+      const vrmHipsNode = vrmScene.getObjectByName('J_Bip_C_Hips');
+      const vrmHipsY = Math.abs(vrmHipsNode?.position.y || 0.64);
+      const heightScale = vrmHipsY / (mixamoHipsY > 0.001 ? mixamoHipsY : 1);
+
+      const newTracks = [];
+      const quat = new THREE.Quaternion();
+
+      for (const track of clip.tracks) {
+        const dotIdx = track.name.indexOf('.');
+        if (dotIdx === -1) continue;
+        const rawNodeName = track.name.slice(0, dotIdx).replace(/^.*[:|]/, '');
+        const prop = track.name.slice(dotIdx + 1);
+
+        const vrmBoneName = MIXAMO_TO_VRM_NODE[rawNodeName];
+        if (!vrmBoneName) continue;
+        const targetNode = vrmScene.getObjectByName(vrmBoneName);
+        if (!targetNode) continue;
+
+        if (prop === 'quaternion') {
+          const sourceNode = sourceScene.getObjectByName(rawNodeName) || sourceScene.getObjectByName(track.name.slice(0, dotIdx));
+          const parentCleanName = sourceNode?.parent ? sourceNode.parent.name.replace(/^.*[:|]/, '') : '';
+          const worldRest = boneWorldRestQuat.get(rawNodeName) || new THREE.Quaternion();
+          const restRotInv = worldRest.clone().invert();
+          const parentWorldRest = boneWorldRestQuat.get(parentCleanName) || new THREE.Quaternion();
+
+          const vals = new Float32Array(track.values.length);
+          for (let i = 0; i < track.values.length; i += 4) {
+            quat.fromArray(track.values, i);
+            quat.premultiply(parentWorldRest).multiply(restRotInv);
+            // Convert +Z forward (Mixamo) to -Z forward (VRM 0.0 local bone axes)
+            quat.x = -quat.x;
+            quat.z = -quat.z;
+            quat.toArray(vals, i);
+          }
+          newTracks.push(new THREE.QuaternionKeyframeTrack(`${vrmBoneName}.quaternion`, track.times.slice(), vals));
+        } else if (prop === 'position' && rawNodeName === 'mixamorigHips') {
+          const vals = new Float32Array(track.values.length);
+          for (let i = 0; i < track.values.length; i += 3) {
+            vals[i] = -track.values[i] * heightScale;
+            vals[i + 1] = track.values[i + 1] * heightScale;
+            vals[i + 2] = -track.values[i + 2] * heightScale;
+          }
+          newTracks.push(new THREE.VectorKeyframeTrack(`${vrmBoneName}.position`, track.times.slice(), vals));
+        }
+      }
+
+      return new THREE.AnimationClip(clip.name, clip.duration, newTracks);
+    }
+
+    function cleanAnimName(filename) {
+      const lower = filename.toLowerCase();
+      if (lower.includes('kneeling down') || lower.includes('kneeling_down')) return 'Kneeling_Down';
+      if (lower.includes('kneeling idle') || lower.includes('kneeling_idle')) return 'Kneeling_Idle';
+      if (lower.includes('praying')) return 'Praying';
+      if (lower.includes('standing up') || lower.includes('standing_up') || lower.includes('stand up')) return 'Standing_Up';
+      if (lower.includes('standing idle') || lower.includes('standing_idle')) return 'Standing_Idle';
+      if (lower.includes('standing')) return 'Standing';
+      if (lower.includes('walking_empty') || lower.includes('walking empty')) return 'Walking_Empty';
+      if (lower.includes('walking')) return 'Walking_Krathong';
+      return filename.replace(/\.[a-z0-9]+$/i, '').replace(/^[a-z0-9]+_/i, '');
+    }
+
+    // Event Handlers
     dropZone.addEventListener('click', () => fileInput.click());
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
@@ -331,38 +606,101 @@
       handleFiles(Array.from(e.target.files));
     });
 
-    function cleanAnimName(filename) {
-      const lower = filename.toLowerCase();
-      if (lower.includes('kneeling down') || lower.includes('kneeling_down')) return 'Kneeling_Down';
-      if (lower.includes('kneeling idle') || lower.includes('kneeling_idle')) return 'Kneeling_Idle';
-      if (lower.includes('praying')) return 'Praying';
-      if (lower.includes('standing')) return 'Standing';
-      if (lower.includes('walking_empty') || lower.includes('walking empty')) return 'Walking_Empty';
-      if (lower.includes('walking')) return 'Walking_Krathong';
-      return filename.replace(/\.fbx$/i, '').replace(/^[a-z0-9]+_/i, '');
+    async function parseSingleFile(file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      const buffer = await file.arrayBuffer();
+
+      if (ext === 'fbx') {
+        const loader = new FBXLoader();
+        const obj = loader.parse(buffer, '');
+        return { scene: obj, animations: obj.animations || [], ext, isVRM: false };
+      }
+
+      if (ext === 'glb' || ext === 'gltf' || ext === 'vrm') {
+        const loader = new GLTFLoader();
+        return await new Promise((resolve, reject) => {
+          loader.parse(buffer, '', (gltf) => {
+            const hasVrmBones = Boolean(gltf.scene.getObjectByName('J_Bip_C_Hips'));
+            resolve({
+              scene: gltf.scene,
+              animations: gltf.animations || [],
+              ext,
+              isVRM: ext === 'vrm' || hasVrmBones,
+            });
+          }, reject);
+        });
+      }
+
+      if (ext === 'obj') {
+        const text = new TextDecoder().decode(buffer);
+        const loader = new OBJLoader();
+        const obj = loader.parse(text);
+        return { scene: obj, animations: [], ext, isVRM: false };
+      }
+
+      if (ext === 'dae') {
+        const text = new TextDecoder().decode(buffer);
+        const loader = new ColladaLoader();
+        const collada = loader.parse(text, '');
+        return { scene: collada.scene, animations: collada.scene.animations || [], ext, isVRM: false };
+      }
+
+      if (ext === 'stl') {
+        const loader = new STLLoader();
+        const geom = loader.parse(buffer);
+        const mat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.4, metalness: 0.1 });
+        const mesh = new THREE.Mesh(geom, mat);
+        const group = new THREE.Group();
+        group.add(mesh);
+        return { scene: group, animations: [], ext, isVRM: false };
+      }
+
+      if (ext === 'ply') {
+        const loader = new PLYLoader();
+        const geom = loader.parse(buffer);
+        geom.computeVertexNormals();
+        const mat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, vertexColors: geom.hasAttribute('color') });
+        const mesh = new THREE.Mesh(geom, mat);
+        const group = new THREE.Group();
+        group.add(mesh);
+        return { scene: group, animations: [], ext, isVRM: false };
+      }
+
+      throw new Error('ไม่รองรับนามสกุล .' + ext);
     }
 
-    async function handleFiles(files) {
-      const fbxFiles = files.filter(f => f.name.toLowerCase().endsWith('.fbx'));
-      if (fbxFiles.length === 0) {
-        statusBox.innerText = '❌ กรุณาเลือกไฟล์ที่เป็นนามสกุล .fbx เท่านั้นครับ';
+    function refreshAnimButtons() {
+      animButtonsEl.innerHTML = '';
+      if (!mainModel || loadedClips.length === 0) {
+        animButtonsEl.innerHTML = `<span style="grid-column: 1 / -1; font-size: 0.78rem; color: #64748b;">(โมเดลนี้ยังไม่มีท่าทาง — กดปุ่มสีม่วงด้านบนเพื่อใส่ท่าลอยกระทง 6 ท่าได้ทันที)</span>`;
         return;
       }
 
-      // Detect prefix (e.g., amy or aj)
-      const firstName = fbxFiles[0].name;
-      if (firstName.toLowerCase().startsWith('amy')) characterPrefix = 'amy';
-      else if (firstName.toLowerCase().startsWith('aj')) characterPrefix = 'aj';
-      else characterPrefix = firstName.split('_')[0] || 'character';
+      mainModel.animations = loadedClips;
+      if (mixer) mixer.stopAllAction();
+      mixer = new THREE.AnimationMixer(mainModel);
+      activeAction = null;
 
-      fileCountEl.innerText = fbxFiles.length;
+      loadedClips.forEach((clip, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'anim-btn';
+        btn.innerText = `▶ ${clip.name}`;
+        btn.onclick = () => playClip(clip, btn);
+        animButtonsEl.appendChild(btn);
+        if (idx === 0) playClip(clip, btn);
+      });
+    }
+
+    async function handleFiles(files) {
+      if (files.length === 0) return;
+
+      fileCountEl.innerText = files.length;
       fileListEl.innerHTML = '';
       animButtonsEl.innerHTML = '';
-      downloadBtn.disabled = true;
+      setExportButtonsEnabled(false);
 
-      statusBox.innerHTML = `⏳ กำลังโหลดและประมวลผล ${fbxFiles.length} ไฟล์...`;
+      statusBox.innerHTML = `⏳ กำลังประมวลผล ${files.length} ไฟล์ในเครื่องของคุณ...`;
 
-      // Clear previous model
       if (mainModel) {
         scene.remove(mainModel);
         mainModel = null;
@@ -371,116 +709,216 @@
         mixer.stopAllAction();
         mixer = null;
       }
+      loadedClips = [];
+      isMainModelVRM = false;
 
-      const loader = new FBXLoader();
-      const loadedClips = [];
-
-      // Sort so that walking or standing is processed first as base skin
-      fbxFiles.sort((a, b) => {
-        const aName = a.name.toLowerCase();
-        const bName = b.name.toLowerCase();
-        if (aName.includes('standing')) return -1;
-        if (bName.includes('standing')) return 1;
-        if (aName.includes('walking')) return -1;
+      // Sort so VRM/GLB/OBJ character models load first before FBX animation clips
+      files.sort((a, b) => {
+        const aExt = a.name.split('.').pop().toLowerCase();
+        const bExt = b.name.split('.').pop().toLowerCase();
+        if (aExt === 'vrm' && bExt !== 'vrm') return -1;
+        if (bExt === 'vrm' && aExt !== 'vrm') return 1;
+        if (a.name.toLowerCase().includes('standing')) return -1;
+        if (b.name.toLowerCase().includes('standing')) return 1;
         return 0;
       });
 
-      for (let i = 0; i < fbxFiles.length; i++) {
-        const file = fbxFiles[i];
+      const firstName = files[0].name.replace(/\.[a-z0-9]+$/i, '');
+      if (firstName.toLowerCase().includes('vroid') || files[0].name.toLowerCase().endsWith('.vrm')) {
+        outNameInput.value = 'vroid';
+      } else {
+        outNameInput.value = (firstName.split('_')[0] || 'character').toLowerCase();
+      }
+
+      const pendingMixamoSources = [];
+
+      for (const file of files) {
         const itemEl = document.createElement('div');
         itemEl.className = 'file-item';
-        itemEl.innerHTML = `<span>${file.name}</span> <span style="color:#64748b;">กำลังอ่าน...</span>`;
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        itemEl.innerHTML = `<span>${file.name} <small style="color:#64748b;">(${sizeMB} MB)</small></span> <span style="color:#64748b;">กำลังอ่าน...</span>`;
         fileListEl.appendChild(itemEl);
 
         try {
-          const buffer = await file.arrayBuffer();
-          const fbxObj = loader.parse(buffer, '');
+          const parsed = await parseSingleFile(file);
 
-          // Check if this object has mesh/skin to be the main model
           if (!mainModel) {
             let hasMesh = false;
-            fbxObj.traverse(child => {
+            parsed.scene.traverse((child) => {
               if (child.isMesh || child.isSkinnedMesh) {
                 hasMesh = true;
                 child.castShadow = true;
                 child.receiveShadow = true;
+                child.frustumCulled = false;
               }
             });
             if (hasMesh) {
-              mainModel = fbxObj;
+              mainModel = parsed.scene;
+              isMainModelVRM = parsed.isVRM;
+
+              // VRM 0.0 faces -Z by default; rotate Root 180 deg around Y so character faces +Z like standard models
+              if (isMainModelVRM) {
+                const vrmRoot = mainModel.getObjectByName('Root') || mainModel.getObjectByName('J_Bip_C_Hips')?.parent;
+                if (vrmRoot && vrmRoot !== mainModel) {
+                  vrmRoot.rotation.y = Math.PI;
+                } else {
+                  mainModel.rotation.y = Math.PI;
+                }
+              }
             }
           }
 
-          // Extract animation
-          if (fbxObj.animations && fbxObj.animations.length > 0) {
-            const clip = fbxObj.animations[0].clone();
-            clip.name = cleanAnimName(file.name);
-            loadedClips.push(clip);
-            itemEl.classList.add('loaded');
-            itemEl.querySelector('span:last-child').innerHTML = `<span style="color:#10b981;">✓ ${clip.name}</span>`;
+          if (parsed.animations && parsed.animations.length > 0) {
+            if (parsed.animations.length === 1) {
+              const clip = parsed.animations[0].clone();
+              clip.name = cleanAnimName(file.name);
+              pendingMixamoSources.push({ clip, sourceScene: parsed.scene, itemEl });
+            } else {
+              parsed.animations.forEach((origClip) => {
+                const clip = origClip.clone();
+                pendingMixamoSources.push({ clip, sourceScene: parsed.scene, itemEl });
+              });
+            }
           } else {
-            itemEl.querySelector('span:last-child').innerHTML = `<span style="color:#f59e0b;">(ไม่มีอนิเมชัน)</span>`;
+            itemEl.classList.add('loaded');
+            itemEl.querySelector('span:last-child').innerHTML = `<span style="color:#10b981;">✓ โมเดล 3D (${parsed.ext.toUpperCase()})</span>`;
           }
         } catch (err) {
           console.error(err);
-          itemEl.querySelector('span:last-child').innerHTML = `<span style="color:#ef4444;">ผิดพลาด</span>`;
+          itemEl.querySelector('span:last-child').innerHTML = `<span style="color:#ef4444;">ผิดพลาด: ${err.message}</span>`;
         }
       }
 
       if (!mainModel) {
-        statusBox.innerText = '❌ ไม่พบโครงสร้างโมเดลตัวละครในไฟล์ที่เลือก';
+        statusBox.innerText = '❌ ไม่พบโครงสร้างโมเดล 3D ในไฟล์ที่เลือก';
         return;
       }
 
-      // Scale model if needed (Mixamo is usually in cm, so scale down to meters if ~100)
+      // Check skeleton presence
+      let hasSkeleton = false;
+      let boneCount = 0;
+      mainModel.traverse((child) => {
+        if (child.isBone) boneCount++;
+        if (child.isSkinnedMesh && child.skeleton) hasSkeleton = true;
+      });
+
+      // Process animations (retarget automatically if mainModel is VRM)
+      for (const entry of pendingMixamoSources) {
+        let finalClip = entry.clip;
+        if (isMainModelVRM) {
+          finalClip = retargetMixamoClipToVRM(entry.clip, entry.sourceScene, mainModel);
+        }
+        loadedClips.push(finalClip);
+        entry.itemEl.classList.add('loaded');
+        entry.itemEl.querySelector('span:last-child').innerHTML = `<span style="color:#10b981;">✓ ${finalClip.name}</span>`;
+      }
+
+      // Auto-generate Kneeling_Idle if Kneeling_Down exists
+      ensureKneelingIdle();
+
+      // Normalize scale if Mixamo cm scale
+      mainModel.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(mainModel);
       const size = box.getSize(new THREE.Vector3());
       if (size.y > 10) {
         mainModel.scale.setScalar(0.01);
       }
 
-      // Center model
+      mainModel.updateMatrixWorld(true);
       box.setFromObject(mainModel);
       const center = box.getCenter(new THREE.Vector3());
       mainModel.position.x = -center.x;
       mainModel.position.z = -center.z;
       mainModel.position.y = -box.min.y;
 
-      // Assign all clips to mainModel
-      mainModel.animations = loadedClips;
       scene.add(mainModel);
+      refreshAnimButtons();
+      setExportButtonsEnabled(true);
 
-      // Setup mixer and animation buttons
-      mixer = new THREE.AnimationMixer(mainModel);
-      animButtonsEl.innerHTML = '';
-
-      loadedClips.forEach((clip, idx) => {
-        const btn = document.createElement('button');
-        btn.className = 'anim-btn';
-        btn.innerText = `▶ ${clip.name}`;
-        btn.onclick = () => playClip(clip, btn);
-        animButtonsEl.appendChild(btn);
-
-        if (idx === 0) {
-          playClip(clip, btn);
-        }
-      });
-
-      statusBox.innerHTML = `✅ ประมวลผลสำเร็จ! รวมได้ <strong>${loadedClips.length}</strong> ท่าทาง`;
-      downloadBtn.disabled = false;
-      downloadBtn.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        ดาวน์โหลด ${characterPrefix}.glb (${loadedClips.length} ท่า)
-      `;
+      if (!hasSkeleton && boneCount === 0) {
+        statusBox.innerHTML = `⚠️ <b>โมเดลนี้ไม่มีโครงกระดูกภายใน (กระดูกหายไปตอนแปลงไฟล์)</b> ทำให้ตัวละครไม่ขยับเมื่อกดเล่นท่า<br><span style="color:#fcd34d;">👉 <b>วิธีแก้:</b> แนะนำให้ลากไฟล์ <b>.vrm</b> ตัวจริงจาก VRoid Studio (19 MB) หรือไฟล์ <b>.fbx</b> ที่ดาวน์โหลดจาก Mixamo เข้ามาแทนครับ</span>`;
+      } else {
+        const rigType = isMainModelVRM ? 'VRoid/VRM Rig' : 'Mixamo Rig';
+        statusBox.innerHTML = `✅ โหลดโมเดลสำเร็จ! (${rigType}, ${boneCount} ข้อต่อ, ${loadedClips.length} ท่าทาง) — กดปุ่มพรีวิวท่าทางทางซ้ายได้เลยครับ`;
+      }
     }
+
+    function ensureKneelingIdle() {
+      const kneelingDown = loadedClips.find((c) => c.name === 'Kneeling_Down');
+      const hasKneelingIdle = loadedClips.some((c) => c.name === 'Kneeling_Idle');
+      if (kneelingDown && !hasKneelingIdle) {
+        try {
+          const idleTracks = kneelingDown.tracks.map((t) => {
+            const clone = t.clone();
+            const lastIdx = Math.max(0, clone.times.length - 1);
+            const valueSize = clone.values.length / Math.max(1, clone.times.length);
+            const lastValue = clone.values.slice(lastIdx * valueSize, (lastIdx + 1) * valueSize);
+            clone.times = new Float32Array([0, 1]);
+            const newValues = new clone.values.constructor(valueSize * 2);
+            newValues.set(lastValue, 0);
+            newValues.set(lastValue, valueSize);
+            clone.values = newValues;
+            return clone;
+          });
+          loadedClips.push(new THREE.AnimationClip('Kneeling_Idle', 1.0, idleTracks));
+        } catch (e) {
+          console.warn('Auto Kneeling_Idle error:', e);
+        }
+      }
+    }
+
+    // 1-Click Inject Loy Krathong 6 Animations from built-in /models/amy.glb
+    injectLoyKrathongBtn.addEventListener('click', async () => {
+      if (!mainModel) return;
+      injectLoyKrathongBtn.disabled = true;
+      statusBox.innerHTML = '⏳ กำลังดึงท่าลอยกระทงทั้ง 6 ท่าและเชื่อมเข้ากับกระดูกตัวละครของคุณ...';
+
+      try {
+        let hasSkeleton = false;
+        let boneCount = 0;
+        mainModel.traverse((child) => {
+          if (child.isBone) boneCount++;
+          if (child.isSkinnedMesh && child.skeleton) hasSkeleton = true;
+        });
+
+        if (!hasSkeleton && boneCount === 0) {
+          statusBox.innerHTML = '❌ <b>ตัวละครไฟล์นี้ไม่มีโครงกระดูกข้างใน</b> (เกิดจากเว็บแปลงไฟล์ Aspose ตัดกระดูกทิ้ง)<br><br>👉 <b>วิธีแก้:</b> กรุณาลากไฟล์ <b>AvatarSample_G123.vrm</b> ตัวจริง (19 MB) จากโฟลเดอร์ <code>model vroid</code> หรือไฟล์ <b>.fbx ที่ดาวน์โหลดจาก Mixamo</b> เข้ามาแทนครับ';
+          return;
+        }
+
+        const loader = new GLTFLoader();
+        const sourceGltf = await loader.loadAsync('/models/amy.glb');
+
+        loadedClips = [];
+        for (const origClip of sourceGltf.animations) {
+          if (isMainModelVRM) {
+            const retargeted = retargetMixamoClipToVRM(origClip, sourceGltf.scene, mainModel);
+            loadedClips.push(retargeted);
+          } else {
+            loadedClips.push(origClip.clone());
+          }
+        }
+
+        ensureKneelingIdle();
+        refreshAnimButtons();
+
+        const autoItem = document.createElement('div');
+        autoItem.className = 'file-item loaded';
+        autoItem.innerHTML = `<span>✨ ชุดท่าลอยกระทงมาตรฐาน (6 ท่า)</span> <span style="color:#a855f7;">✓ เชื่อมกระดูกสำเร็จ</span>`;
+        fileListEl.appendChild(autoItem);
+
+        statusBox.innerHTML = `🎉 ใส่ท่าลอยกระทงครบ <strong>${loadedClips.length} ท่า</strong> สำเร็จแล้ว! กดปุ่ม <b>ดาวน์โหลด .GLB</b> ด้านล่างไปวางใน <code>public/models/</code> ได้เลยครับ`;
+      } catch (err) {
+        console.error(err);
+        statusBox.innerHTML = `❌ ดึงท่าไม่สำเร็จ: ${err.message}`;
+      } finally {
+        injectLoyKrathongBtn.disabled = false;
+      }
+    });
 
     function playClip(clip, activeBtn) {
       if (!mixer) return;
-      document.querySelectorAll('.anim-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.anim-btn').forEach((b) => b.classList.remove('active'));
       if (activeBtn) activeBtn.classList.add('active');
 
       const nextAction = mixer.clipAction(clip);
@@ -491,39 +929,156 @@
       }
     }
 
-    // Export to GLB
-    downloadBtn.addEventListener('click', () => {
-      if (!mainModel) return;
+    function setExportButtonsEnabled(enabled) {
+      injectLoyKrathongBtn.disabled = !enabled;
+      sendToGameBtn.disabled = !enabled;
+      downloadGlbBtn.disabled = !enabled;
+      downloadObjBtn.disabled = !enabled;
+      downloadGltfBtn.disabled = !enabled;
+      downloadStlBtn.disabled = !enabled;
+      downloadPlyBtn.disabled = !enabled;
+    }
 
-      statusBox.innerText = '⏳ กำลังสร้างไฟล์ .GLB... กรุณารอสักครู่';
-      downloadBtn.disabled = true;
+    function triggerDownload(blob, filename) {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+    }
+
+    function getBaseOutName() {
+      return (outNameInput.value || 'model').trim().replace(/\.[a-z0-9]+$/i, '');
+    }
+
+    // Send directly to game server (public/models/) and spawn in scene!
+    sendToGameBtn.addEventListener('click', () => {
+      if (!mainModel) return;
+      const outName = `${getBaseOutName()}.glb`;
+      const role = roleSelect.value || 'female';
+      statusBox.innerHTML = `⏳ กำลังแพ็กและส่ง <strong>${outName}</strong> เข้าคลังเกมและฉาก...`;
+      setExportButtonsEnabled(false);
 
       const exporter = new GLTFExporter();
       exporter.parse(
         mainModel,
-        (gltf) => {
-          const blob = new Blob([gltf], { type: 'model/gltf-binary' });
-          const link = document.createElement('a');
-          link.href = URL.createObjectURL(blob);
-          const outName = `${characterPrefix}.glb`;
-          link.download = outName;
-          link.click();
+        async (gltfBuffer) => {
+          try {
+            const params = new URLSearchParams({ name: outName, role, spawn: '1' });
+            const token = new URLSearchParams(location.search).get('token');
+            if (token) params.set('token', token);
+            const res = await fetch(`/api/admin/models/save?${params.toString()}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/octet-stream' },
+              body: gltfBuffer,
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'บันทึกไม่สำเร็จ');
+            statusBox.innerHTML = `🎉 <b>บันทึกเข้าเกมสำเร็จ!</b> (<code>${data.model.url}</code>, ${data.model.sizeMB} MB)<br><span style="color:#10b981;">✅ อัปเดตฉากและปล่อยตัวละครเดินเข้าหน้าเกมให้ทันทีแล้วครับ!</span>`;
+          } catch (e) {
+            console.error(e);
+            statusBox.innerHTML = `❌ ส่งเข้าเกมไม่สำเร็จ: ${e.message}`;
+          } finally {
+            setExportButtonsEnabled(true);
+          }
+        },
+        (err) => {
+          console.error(err);
+          statusBox.innerText = '❌ เกิดข้อผิดพลาดในการสร้าง .GLB';
+          setExportButtonsEnabled(true);
+        },
+        { binary: true, animations: mainModel.animations || [] }
+      );
+    });
 
-          statusBox.innerHTML = `🎉 ดาวน์โหลด <strong>${outName}</strong> เรียบร้อยแล้ว!`;
-          downloadBtn.disabled = false;
+    // Export .GLB
+    downloadGlbBtn.addEventListener('click', () => {
+      if (!mainModel) return;
+      statusBox.innerText = '⏳ กำลังสร้างไฟล์ .GLB...';
+      setExportButtonsEnabled(false);
+
+      const exporter = new GLTFExporter();
+      exporter.parse(
+        mainModel,
+        (gltfBuffer) => {
+          const outName = `${getBaseOutName()}.glb`;
+          triggerDownload(new Blob([gltfBuffer], { type: 'model/gltf-binary' }), outName);
+          statusBox.innerHTML = `🎉 ดาวน์โหลด <strong>${outName}</strong> สำเร็จ!<br><span style="color:#38bdf8;">นำไปวางที่ <code>public/models/${outName}</code> เพื่อใช้ในเกมได้เลยครับ</span>`;
+          setExportButtonsEnabled(true);
         },
-        (error) => {
-          console.error(error);
-          statusBox.innerText = '❌ เกิดข้อผิดพลาดในการสร้างไฟล์ GLB';
-          downloadBtn.disabled = false;
+        (err) => {
+          console.error(err);
+          statusBox.innerText = '❌ เกิดข้อผิดพลาดในการสร้าง .GLB';
+          setExportButtonsEnabled(true);
         },
-        {
-          binary: true,
-          animations: mainModel.animations
+        { binary: true, animations: mainModel.animations || [] }
+      );
+    });
+
+    // Export .OBJ (For Mixamo Auto-Rigger - strips bones, keeps pure T-pose geometry)
+    downloadObjBtn.addEventListener('click', () => {
+      if (!mainModel) return;
+      statusBox.innerText = '⏳ กำลังแปลงเป็นไฟล์ .OBJ (ตัดกระดูกเก่าออกเพื่อ Mixamo)...';
+      setExportButtonsEnabled(false);
+
+      setTimeout(() => {
+        try {
+          if (mixer) mixer.stopAllAction();
+          mainModel.updateMatrixWorld(true);
+          const exporter = new OBJExporter();
+          const objText = exporter.parse(mainModel);
+          const outName = `${getBaseOutName()}_mixamo.obj`;
+          triggerDownload(new Blob([objText], { type: 'text/plain;charset=utf-8' }), outName);
+          statusBox.innerHTML = `🎉 ดาวน์โหลด <strong>${outName}</strong> สำเร็จ!<br><span style="color:#fcd34d;">นำไฟล์ .obj นี้ไปกด UPLOAD CHARACTER บนเว็บ Mixamo ได้เลย (ไม่ติดขนาดไฟล์และไม่ติดกระดูกเก่า)</span>`;
+        } catch (err) {
+          console.error(err);
+          statusBox.innerText = '❌ เกิดข้อผิดพลาดในการสร้าง .OBJ';
+        } finally {
+          setExportButtonsEnabled(true);
         }
+      }, 50);
+    });
+
+    // Export .GLTF (JSON)
+    downloadGltfBtn.addEventListener('click', () => {
+      if (!mainModel) return;
+      const exporter = new GLTFExporter();
+      exporter.parse(
+        mainModel,
+        (gltfJson) => {
+          const outName = `${getBaseOutName()}.gltf`;
+          triggerDownload(new Blob([JSON.stringify(gltfJson, null, 2)], { type: 'application/json' }), outName);
+          statusBox.innerHTML = `🎉 ดาวน์โหลด <strong>${outName}</strong> สำเร็จ!`;
+        },
+        (err) => console.error(err),
+        { binary: false, animations: mainModel.animations || [] }
+      );
+    });
+
+    // Export .STL
+    downloadStlBtn.addEventListener('click', () => {
+      if (!mainModel) return;
+      const exporter = new STLExporter();
+      const result = exporter.parse(mainModel, { binary: true });
+      const outName = `${getBaseOutName()}.stl`;
+      triggerDownload(new Blob([result], { type: 'application/octet-stream' }), outName);
+      statusBox.innerHTML = `🎉 ดาวน์โหลด <strong>${outName}</strong> สำเร็จ!`;
+    });
+
+    // Export .PLY
+    downloadPlyBtn.addEventListener('click', () => {
+      if (!mainModel) return;
+      const exporter = new PLYExporter();
+      exporter.parse(
+        mainModel,
+        (result) => {
+          const outName = `${getBaseOutName()}.ply`;
+          triggerDownload(new Blob([result], { type: 'application/octet-stream' }), outName);
+          statusBox.innerHTML = `🎉 ดาวน์โหลด <strong>${outName}</strong> สำเร็จ!`;
+        },
+        { binary: true }
       );
     });
   </script>
 </body>
 </html>
-

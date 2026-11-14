@@ -32,24 +32,24 @@ export class Hud {
   #build() {
     const { tiers, meritSharePercent } = this.config;
 
+    this.brandEl = el('div', 'brand', '<span class="brand-dot"></span>ประเพณีลอยกระทง');
+    this.titleEl = el('h1', 'title', 'ลอยกระทง<span>ขอขมาพระแม่คงคา</span>');
+    this.subtitleEl = el('p', 'subtitle', 'ร่วมลอยกระทงด้วยกัน ทุกใบคือความตั้งใจดี');
+
     this.root.append(
       (() => {
         const h = el('header', 'hud-head');
-        h.append(
-          el('div', 'brand', '<span class="brand-dot"></span>ประเพณีลอยกระทง'),
-          el('h1', 'title', 'ลอยกระทง<span>ขอขมาพระแม่คงคา</span>'),
-          el('p', 'subtitle', 'ร่วมลอยกระทงด้วยกัน ทุกใบคือความตั้งใจดี')
-        );
+        h.append(this.brandEl, this.titleEl, this.subtitleEl);
         return h;
       })()
     );
 
-    const how = el('section', 'howto');
-    how.innerHTML = `
-      <div class="how-row"><b>1</b><span>พิมพ์ <em>ชาย</em> หรือ <em>หญิง</em> ในคอมเมนต์</span><i>ลอยฟรี</i></div>
-      <div class="how-row"><b>2</b><span>ส่งของขวัญเพื่ออัปเกรดเป็น <em>กระทงที่ยิ่งใหญ่ขึ้น</em> <small style="display:block;opacity:0.8;font-size:0.85em;color:#ffeaa7;">(พิมพ์ ชาย/หญิง ก่อนส่งเพื่อเลือกเพศตัวละคร)</small></span></div>
+    this.howEl = el('section', 'howto');
+    this.howEl.innerHTML = `
+      <div class="how-row"><b>1</b><span>พิมพ์ข้อความทักทายในคอมเมนต์เพื่อส่งตัวละครเข้าฉาก</span><i>ร่วมฟรี</i></div>
+      <div class="how-row"><b>2</b><span>ส่งของขวัญเพื่ออัปเกรดระดับเอฟเฟกต์และท่าทางพิเศษตามระดับเพชร</span></div>
       <p class="pledge">ผู้จัดตั้งใจแบ่งรายได้ ${esc(meritSharePercent)}% ไปทำบุญ พร้อมเผยหลักฐานทุกครั้ง</p>`;
-    this.root.append(how);
+    this.root.append(this.howEl);
 
     const legend = el('section', 'legend');
     tiers.forEach((t) => {
@@ -59,7 +59,7 @@ export class Hud {
     });
     this.root.append(legend);
 
-    this.counter = el('div', 'counter', '<small>กระทงที่ลอยแล้ว</small><strong>0</strong>');
+    this.counter = el('div', 'counter', '<small id="counterLabel">ผู้ร่วมกิจกรรม</small><strong>0</strong>');
     this.root.append(this.counter);
 
     this.feed = el('div', 'feed');
@@ -70,6 +70,10 @@ export class Hud {
 
     this.status = el('div', 'conn-status', '');
     this.root.append(this.status);
+
+    if (this.config?.scene) {
+      this.updateScene(this.config.scene);
+    }
   }
 
   setCount(n) {
@@ -79,6 +83,36 @@ export class Hud {
   setConnection(state) {
     this.status.textContent = state === 'online' ? '' : 'กำลังเชื่อมต่อใหม่…';
     this.status.classList.toggle('show', state !== 'online');
+  }
+
+  updateScene(scene = {}) {
+    if (scene.badgeText && this.brandEl) {
+      this.brandEl.innerHTML = `<span class="brand-dot"></span>${esc(scene.badgeText)}`;
+    }
+    if (scene.title && this.titleEl) {
+      const parts = String(scene.title).trim().split(/\s+/);
+      if (parts.length > 1) {
+        const first = parts.shift();
+        this.titleEl.innerHTML = `${esc(first)}<span>${esc(parts.join(' '))}</span>`;
+      } else {
+        this.titleEl.innerHTML = `${esc(scene.title)}`;
+      }
+      document.title = `${scene.title} · Live`;
+    }
+    if (scene.subtitle !== undefined && this.subtitleEl) {
+      this.subtitleEl.textContent = scene.subtitle;
+    }
+    if (scene.activityMode && this.counter) {
+      const lbl = this.counter.querySelector('#counterLabel');
+      if (lbl) {
+        lbl.textContent =
+          scene.activityMode === 'temple-blessing'
+            ? 'ผู้ร่วมไหว้พระขอพร'
+            : scene.activityMode === 'party-dance'
+            ? 'ผู้ร่วมเต้นปาร์ตี้'
+            : 'กระทงที่ลอยแล้ว';
+      }
+    }
   }
 
   /** รายชื่อผู้ร่วมล่าสุด */

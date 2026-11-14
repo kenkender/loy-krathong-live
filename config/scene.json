@@ -1,0 +1,28 @@
+{
+  "activityMode": "temple-blessing",
+  "theme": "temple-fair",
+  "badgeText": "มหาบุญมหากุศล",
+  "title": "ไหว้พระขอพร เสริมสิริมงคล",
+  "subtitle": "ร่วมถวายดอกบัวทองและอธิษฐานจิตหน้าองค์พระประธาน",
+  "walkDirection": "left-to-right",
+  "cameraPreset": "iso-right",
+  "cameraYaw": 0,
+  "cameraTilt": 0,
+  "cameraZoom": 1,
+  "danceSpeed": 1,
+  "characterPool": [
+    "/models/aj.glb",
+    "/models/amy.glb",
+    "/models/aora.glb",
+    "/models/vroid.glb"
+  ],
+  "femaleModel": "/models/vroid.glb",
+  "maleModel": "/models/aora.glb",
+  "leftPropModel": "/models/pagoda_thai.glb",
+  "rightPropModel": "/models/mandapa_wat_khuha_phimuk_yala_thailand.glb",
+  "showProps": true,
+  "showFerrisWheel": true,
+  "showLanterns": true,
+  "showNPCs": true,
+  "characterScale": 0.9
+}

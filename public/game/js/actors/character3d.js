@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { updateCameraRig, applyActivityPose } from '../modes/camera-rig.js';
 
 export class Character3DManager {
   constructor(L, backdrop = null) {
@@ -9,11 +10,87 @@ export class Character3DManager {
     this.enabled = true;
     this.loaded = false;
     this.templates = {}; // { male: gltf, female: gltf }
+    this.poolTemplates = []; // array of gltf for diverse characters in the scene
+    this.poolIndex = 0;
+    this.shuffleBag = [];
+    this.lastPoppedModel = null;
+    this.modelCache = new Map(); // url -> gltf
     this.avatars = new Map(); // ch -> avatarData
     this.scene = null;
     this.camera = null;
     this.renderer = null;
     this.canvas = null;
+    this.loader = new GLTFLoader();
+    this.characterScale = 1.0;
+    this.sceneCfg = {
+      characterPool: ['/models/amy.glb', '/models/aj.glb', '/models/kate.glb'],
+      femaleModel: '/models/amy.glb',
+      maleModel: '/models/aj.glb',
+      leftPropModel: '/models/pagoda_thai.glb',
+      rightPropModel: '/models/mandapa_wat_khuha_phimuk_yala_thailand.glb',
+      showProps: true,
+      characterScale: 1.0,
+    };
+  }
+
+  async loadModelCached(url, bustCache = false) {
+    if (!url || url === 'none') return null;
+    if (!bustCache && this.modelCache.has(url)) return this.modelCache.get(url);
+    try {
+      const fetchUrl = bustCache ? `${url}?t=${Date.now()}` : url;
+      const gltf = await this.loader.loadAsync(fetchUrl);
+      // วัดความสูงโมเดลธรรมชาติ
+      gltf.scene.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(gltf.scene);
+      const h = box.getSize(new THREE.Vector3()).y;
+
+      // ตรวจสอบทิศทางหันหน้าตามแกน Z ของโมเดลเพื่อปรับแก้โมเดลที่แกนกลับด้าน 180 องศา
+      // (ตรวจสอบบน testModel โคลนเฉพาะกิจ ไม่กระทบ gltf.scene ต้นฉบับ และตรวจทิศทางมือที่ยื่นไปข้างหน้า)
+      let yawOffset = 0;
+      const orientClip =
+        gltf.animations?.find((a) => a.name === 'Walking_Krathong') ||
+        gltf.animations?.find((a) => a.name === 'Praying') ||
+        gltf.animations?.[0];
+      if (orientClip) {
+        const testModel = SkeletonUtils.clone(gltf.scene);
+        const mixer = new THREE.AnimationMixer(testModel);
+        mixer.clipAction(orientClip).play();
+        mixer.update(0.2);
+        testModel.updateMatrixWorld(true);
+        let spine = null;
+        const hands = [];
+        testModel.traverse((c) => {
+          if (/spine|chest|hips/i.test(c.name) && !spine) spine = c;
+          if (/hand/i.test(c.name)) hands.push(c);
+        });
+        if (spine && hands.length > 0) {
+          const sp = new THREE.Vector3();
+          spine.getWorldPosition(sp);
+          let avgZ = 0;
+          for (const h of hands) {
+            const hp = new THREE.Vector3();
+            h.getWorldPosition(hp);
+            avgZ += hp.z - sp.z;
+          }
+          avgZ /= hands.length;
+          // ทิศมาตรฐานของโมเดล Mixamo/VRM: มือจะยื่นไปข้างหน้าในแกน +Z (avgZ > 0)
+          // หากมีโมเดลใดที่แกนกลับด้าน 180 องศา (avgZ < -0.05) จะหมุนแก้ด้วย Math.PI
+          if (avgZ < -0.05) {
+            yawOffset = Math.PI;
+          }
+        }
+      }
+
+      gltf.userData = {
+        rawHeight: h > 0.1 && h < 10 ? h : 1.55,
+        yawOffset,
+      };
+      this.modelCache.set(url, gltf);
+      return gltf;
+    } catch (e) {
+      console.warn('Failed to load ' + url, e);
+      return null;
+    }
   }
 
   async init(stageEl) {
@@ -74,95 +151,106 @@ export class Character3DManager {
     fillLight.position.set(-300, -200, 600);
     this.scene.add(fillLight);
 
-    // Load Models
-    const loader = new GLTFLoader();
-    const loadSafe = (url) => loader.loadAsync(url).catch((e) => {
-      console.warn('Failed to load ' + url, e);
-      return null;
-    });
-
     try {
-      const [femaleGltf, maleGltf, mandapaGltf, pagodaGltf] = await Promise.all([
-        loadSafe('/models/amy.glb'),
-        loadSafe('/models/aj.glb'),
-        loadSafe('/models/mandapa_wat_khuha_phimuk_yala_thailand.glb'),
-        loadSafe('/models/pagoda_thai.glb'),
-      ]);
-
-      if (femaleGltf && maleGltf) {
-        this.templates.female = femaleGltf;
-        this.templates.male = maleGltf;
-        this.loaded = true;
-      }
-
-      const u = this.L.unit;
-      const portrait = this.L.mode === 'portrait';
-      const baseY = this.backdrop?.baseY || (this.L.landTop + (portrait ? 273 : 233) * u);
-
-      // เรนเดอร์โมเดล 3D ฉากหลัง (เจดีย์ + มณฑปองค์พระ) ลงในเลเยอร์ฉากหลัง (modelsCanvas)
-      // เพื่อให้อยู่หลังสนามหญ้า สายไฟ โคมไฟ และตัวละครอย่างสมส่วน ไม่ลอยทับวัตถุด้านหน้า
-      if ((pagodaGltf || mandapaGltf) && this.backdrop?.modelsCanvas) {
-        const bgScene = new THREE.Scene();
-
-        const bgAmbient = new THREE.AmbientLight(0xffe8c8, 1.9);
-        bgScene.add(bgAmbient);
-
-        const bgKeyLight = new THREE.DirectionalLight(0xffdf9e, 2.4);
-        bgKeyLight.position.set(350, 500, 750);
-        bgScene.add(bgKeyLight);
-
-        const bgFillLight = new THREE.DirectionalLight(0x9b7ede, 1.1);
-        bgFillLight.position.set(-400, 200, 400);
-        bgScene.add(bgFillLight);
-
-        // 1. เจดีย์สีทอง 3D (วางฝั่งซ้ายของวัด ขนาดสมส่วน ไม่ชนการ์ดด้านบน)
-        if (pagodaGltf) {
-          const pagodaModel = pagodaGltf.scene;
-          pagodaModel.traverse((child) => {
-            if (child.isMesh) {
-              child.frustumCulled = false;
-            }
-          });
-          const pagodaPivot = this.fitModel(pagodaModel, (portrait ? 280 : 255) * u);
-          const chediX = this.L.W * (portrait ? 0.14 : 0.13);
-          pagodaPivot.position.set(chediX, -(baseY + 8 * u), -40);
-          pagodaPivot.rotation.y = Math.PI * 0.12;
-          bgScene.add(pagodaPivot);
-        }
-
-        // 2. มณฑปพระพุทธรูปวัดคูหาภิมุข 3D (วางถัดมาทางขวาของเจดีย์ ไม่ทับซ้อนกัน หันบันไดหน้าออกสู่แม่น้ำ)
-        if (mandapaGltf) {
-          const mandapaModel = mandapaGltf.scene;
-          mandapaModel.traverse((child) => {
-            if (child.isMesh) {
-              child.frustumCulled = false;
-            }
-          });
-          const mandapaPivot = this.fitModel(mandapaModel, (portrait ? 190 : 175) * u);
-          const mandapaX = this.L.W * (portrait ? 0.30 : 0.27);
-          mandapaPivot.position.set(mandapaX, -(baseY + 14 * u), 20);
-          // หันด้านหน้ามณฑป (+X ของโมเดล) ออกมาทางผู้ชม (+Z)
-          mandapaPivot.rotation.y = -Math.PI * 0.45;
-          bgScene.add(mandapaPivot);
-
-          const buddhaLight = new THREE.PointLight(0xffd875, 3.2, 500);
-          buddhaLight.position.set(mandapaX, -(baseY - 95 * u), 140);
-          bgScene.add(buddhaLight);
-        }
-
-        // เรนเดอร์ฉากหลัง 3D ลงบน modelsCanvas ครั้งเดียว แล้วล้าง WebGL canvas ให้พร้อมสำหรับตัวละคร
-        this.renderer.render(bgScene, this.camera);
-        const modelsCtx = this.backdrop.modelsCanvas.getContext('2d');
-        modelsCtx.clearRect(0, 0, this.L.W, this.L.H);
-        modelsCtx.drawImage(this.renderer.domElement, 0, 0, this.L.W, this.L.H);
-        this.renderer.clear();
-      }
-
+      await this.applySceneConfig(this.sceneCfg, false);
       console.log('✅ 3D Models loaded (characters, mandapa, pagoda)');
     } catch (err) {
       console.warn('⚠️ 3D models load error, fallback to 2D:', err);
       this.loaded = false;
     }
+  }
+
+  async applySceneConfig(cfg = {}, bustCache = false) {
+    this.sceneCfg = { ...this.sceneCfg, ...cfg };
+    this.characterScale = Number(this.sceneCfg.characterScale) || 1.0;
+
+    const poolUrls = Array.isArray(this.sceneCfg.characterPool) && this.sceneCfg.characterPool.length
+      ? this.sceneCfg.characterPool
+      : [this.sceneCfg.femaleModel || '/models/amy.glb', this.sceneCfg.maleModel || '/models/aj.glb'];
+
+    const [loadedPool, rightGltf, leftGltf] = await Promise.all([
+      Promise.all(poolUrls.map((u) => this.loadModelCached(u, bustCache))),
+      this.sceneCfg.showProps !== false ? this.loadModelCached(this.sceneCfg.rightPropModel, bustCache) : Promise.resolve(null),
+      this.sceneCfg.showProps !== false ? this.loadModelCached(this.sceneCfg.leftPropModel, bustCache) : Promise.resolve(null),
+    ]);
+
+    const validPool = loadedPool.filter(Boolean);
+    if (validPool.length > 0) {
+      this.poolTemplates = validPool;
+      this.shuffleBag = [];
+      this.lastPoppedModel = null;
+      this.templates.female = validPool[0];
+      this.templates.male = validPool[1] || validPool[0];
+      this.loaded = true;
+    }
+
+    this.renderBackdropProps(leftGltf, rightGltf);
+  }
+
+  renderBackdropProps(pagodaGltf, mandapaGltf) {
+    if (!this.backdrop?.modelsCanvas || !this.renderer || !this.camera) return;
+    const modelsCtx = this.backdrop.modelsCanvas.getContext('2d');
+    modelsCtx.clearRect(0, 0, this.L.W, this.L.H);
+
+    if (!pagodaGltf && !mandapaGltf) return;
+
+    const u = this.L.unit;
+    const portrait = this.L.mode === 'portrait';
+    const baseY = this.backdrop?.baseY || (this.L.landTop + (portrait ? 273 : 233) * u);
+
+    const bgScene = new THREE.Scene();
+
+    const bgAmbient = new THREE.AmbientLight(0xffe8c8, 1.9);
+    bgScene.add(bgAmbient);
+
+    const bgKeyLight = new THREE.DirectionalLight(0xffdf9e, 2.4);
+    bgKeyLight.position.set(350, 500, 750);
+    bgScene.add(bgKeyLight);
+
+    const bgFillLight = new THREE.DirectionalLight(0x9b7ede, 1.1);
+    bgFillLight.position.set(-400, 200, 400);
+    bgScene.add(bgFillLight);
+
+    if (pagodaGltf) {
+      const pagodaModel = pagodaGltf.scene.clone(true);
+      pagodaModel.traverse((child) => {
+        if (child.isMesh) child.frustumCulled = false;
+      });
+      const pagodaPivot = this.fitModel(pagodaModel, (portrait ? 280 : 255) * u);
+      const chediX = this.L.W * (portrait ? 0.14 : 0.13);
+      pagodaPivot.position.set(chediX, -(baseY + 8 * u), -40);
+      pagodaPivot.rotation.y = Math.PI * 0.12;
+      bgScene.add(pagodaPivot);
+    }
+
+    if (mandapaGltf) {
+      const mandapaModel = mandapaGltf.scene.clone(true);
+      mandapaModel.traverse((child) => {
+        if (child.isMesh) child.frustumCulled = false;
+      });
+      const mandapaPivot = this.fitModel(mandapaModel, (portrait ? 190 : 175) * u);
+      const mandapaX = this.L.W * (portrait ? 0.30 : 0.27);
+      mandapaPivot.position.set(mandapaX, -(baseY + 14 * u), 20);
+      mandapaPivot.rotation.y = -Math.PI * 0.45;
+      bgScene.add(mandapaPivot);
+
+      const buddhaLight = new THREE.PointLight(0xffd875, 3.2, 500);
+      buddhaLight.position.set(mandapaX, -(baseY - 95 * u), 140);
+      bgScene.add(buddhaLight);
+    }
+
+    // เรนเดอร์ฉากหลังด้วยกล้องค่ามาตรฐาน (ไม่ซูม/ไม่เลื่อน) แล้วคืนค่ากล้องเดิม
+    const savedPos = this.camera.position.clone();
+    const savedZoom = this.camera.zoom;
+    this.camera.position.set(0, 0, 1000);
+    this.camera.zoom = 1;
+    this.camera.updateProjectionMatrix();
+    this.renderer.render(bgScene, this.camera);
+    this.camera.position.copy(savedPos);
+    this.camera.zoom = savedZoom;
+    this.camera.updateProjectionMatrix();
+    modelsCtx.drawImage(this.renderer.domElement, 0, 0, this.L.W, this.L.H);
+    this.renderer.clear();
   }
 
   fitModel(model, targetPixelHeight) {
@@ -203,7 +291,34 @@ export class Character3DManager {
   }
 
   createAvatar(ch) {
-    const gltf = ch.gender === 'female' ? this.templates.female : this.templates.male;
+    let gltf = null;
+    if (ch.job?.modelUrl) {
+      if (this.modelCache.has(ch.job.modelUrl)) {
+        gltf = this.modelCache.get(ch.job.modelUrl);
+      } else {
+        this.loadModelCached(ch.job.modelUrl);
+      }
+    }
+    if (!gltf && this.poolTemplates.length > 0) {
+      if (!this.shuffleBag || this.shuffleBag.length === 0) {
+        // สุ่มสับไพ่โมเดลใหม่ทั้งหมด (Fisher-Yates Shuffle) เพื่อให้ทุกตัวในคลังมีโอกาสเดินออกสลับกันครบถ้วน
+        this.shuffleBag = [...this.poolTemplates];
+        for (let i = this.shuffleBag.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [this.shuffleBag[i], this.shuffleBag[j]] = [this.shuffleBag[j], this.shuffleBag[i]];
+        }
+        // เลี่ยงการสุ่มได้โมเดลซ้ำกับตัวล่าสุดทันทีเมื่อมีโมเดลมากกว่า 1 ตัว
+        if (this.shuffleBag.length > 1 && this.shuffleBag[this.shuffleBag.length - 1] === this.lastPoppedModel) {
+          const swapIdx = Math.floor(Math.random() * (this.shuffleBag.length - 1));
+          [this.shuffleBag[this.shuffleBag.length - 1], this.shuffleBag[swapIdx]] = [this.shuffleBag[swapIdx], this.shuffleBag[this.shuffleBag.length - 1]];
+        }
+      }
+      gltf = this.shuffleBag.pop();
+      this.lastPoppedModel = gltf;
+    }
+    if (!gltf) {
+      gltf = ch.gender === 'female' ? this.templates.female : this.templates.male;
+    }
     if (!gltf) return null;
 
     // Clone model and skeleton cleanly
@@ -212,31 +327,35 @@ export class Character3DManager {
       if (child.isMesh || child.isSkinnedMesh) {
         child.frustumCulled = false;
         if (child.material) {
-          child.material = child.material.clone();
-          child.material.roughness = 0.45;
-          child.material.metalness = 0.05;
+          child.material = Array.isArray(child.material)
+            ? child.material.map((m) => m.clone())
+            : child.material.clone();
+          if (!Array.isArray(child.material)) {
+            if ('roughness' in child.material) child.material.roughness = 0.45;
+            if ('metalness' in child.material) child.material.metalness = 0.05;
+          }
         }
       }
     });
 
-    // Scale calculation:
-    // Model in GLB has root scale 0.01, so raw height is ~1.47m (Amy) and ~1.85m (AJ)
-    // Target height on screen: ~235px (Amy) and ~260px (AJ)
     const u = this.L.unit;
-    const targetPixelHeight = (ch.gender === 'female' ? 230 : 255) * u;
-    const modelHeightInMeters = ch.gender === 'female' ? 1.47 : 1.85;
-    const scaleFactor = targetPixelHeight / modelHeightInMeters; // ~140 - 160
+    const targetPixelHeight = (ch.gender === 'female' ? 235 : 255) * u * (this.characterScale || 1.0);
+    const modelHeightInMeters = gltf.userData?.rawHeight || (ch.gender === 'female' ? 1.47 : 1.85);
+    const scaleFactor = targetPixelHeight / modelHeightInMeters;
     model.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
     model.rotation.y = Math.PI * 0.55;
     this.scene.add(model);
 
-    // ค้นหากระดูกข้อมือ/ฝ่ามือของโมเดลเพื่อติดตามตำแหน่งกระทงแบบเรียลไทม์
+    // ค้นหากระดูกข้อมือ/ฝ่ามือ และกระดูกศีรษะ (รองรับทั้ง Mixamo และ VRoid/VRM)
     let rightHand = null;
     let leftHand = null;
+    let head = null;
     model.traverse((child) => {
-      if (child.name === 'mixamorigRightHand') rightHand = child;
-      if (child.name === 'mixamorigLeftHand') leftHand = child;
+      const n = child.name || '';
+      if (n === 'mixamorigRightHand' || n === 'J_Bip_R_Hand') rightHand = child;
+      if (n === 'mixamorigLeftHand' || n === 'J_Bip_L_Hand') leftHand = child;
+      if (n === 'mixamorigHead' || n === 'J_Bip_C_Head' || n === 'Head' || n.toLowerCase().includes('head')) head = child;
     });
 
     // Setup animations
@@ -255,10 +374,13 @@ export class Character3DManager {
       actions,
       rightHand,
       leftHand,
+      head,
+      baseScale: scaleFactor,
       currentAction: null,
       currentClipName: null,
       gender: ch.gender,
       targetRotationY: Math.PI * 0.55,
+      yawOffset: gltf.userData?.yawOffset || 0,
     };
 
     // Initial animation
@@ -289,13 +411,15 @@ export class Character3DManager {
     avatar.currentClipName = clipName;
   }
 
-  update(characters, dt) {
+  update(characters, dt, t = 0) {
     if (!this.loaded || !this.enabled) {
       if (this.renderer && this.canvas) {
         this.renderer.clear();
       }
       return;
     }
+
+    updateCameraRig(this.camera, this.L, this.sceneCfg, t);
 
     const currentChSet = new Set(characters);
 
@@ -319,37 +443,22 @@ export class Character3DManager {
       }
       if (!avatar) continue;
 
-      // Position in Three.js coordinates
-      avatar.model.position.x = ch.x;
-      avatar.model.position.y = -ch.y;
-      avatar.model.position.z = 100;
+      const u = this.L.unit;
 
-      // Update Animation State
-      // 0: WALK_IN, 1: BOW, 2: PRAY, 3: WALK_OUT, 4: DONE
-      if (ch.state === 0) {
-        // WALK_IN: เดินถือกระทงเข้ามา หันหน้าไปทางขวาตามทิศทางเดิน
-        avatar.targetRotationY = Math.PI * 0.55;
-        this.playAnim(avatar, 'Walking_Krathong', 0.2, true);
-      } else if (ch.state === 1) {
-        // BOW: ย่อตัวลงวางกระทง หันตรงมาทางแม่น้ำ/ผู้ชม
-        avatar.targetRotationY = 0;
-        if (ch.timer < 1.3) {
-          this.playAnim(avatar, 'Kneeling_Down', 0.2, false);
-        } else {
-          this.playAnim(avatar, 'Kneeling_Idle', 0.2, true);
-        }
-      } else if (ch.state === 2) {
-        // PRAY: พนมมือไหว้ขอขมา หันตรงมาทางแม่น้ำ/ผู้ชม
-        avatar.targetRotationY = 0;
-        this.playAnim(avatar, 'Praying', 0.25, true);
-      } else if (ch.state === 3) {
-        // WALK_OUT: เดินต่อไปข้างหน้าข้ามสะพานออกทางขวา หันหน้าไปทางขวา
-        avatar.targetRotationY = Math.PI * 0.55;
-        this.playAnim(avatar, 'Walking_Empty', 0.2, true);
-      }
+      // อัปเดตตำแหน่ง ท่าทาง และการเต้น/ไหว้ตามโหมดกิจกรรมและมุมกล้อง
+      applyActivityPose(
+        avatar,
+        ch,
+        this.sceneCfg,
+        (av, clip, fade, loop) => this.playAnim(av, clip, fade, loop),
+        t,
+        dt,
+        u
+      );
 
-      // Smooth rotation
-      let diff = avatar.targetRotationY - avatar.model.rotation.y;
+      // Smooth rotation with unified model orientation
+      const desiredY = avatar.targetRotationY + (avatar.yawOffset || 0);
+      let diff = desiredY - avatar.model.rotation.y;
       while (diff < -Math.PI) diff += Math.PI * 2;
       while (diff > Math.PI) diff -= Math.PI * 2;
       avatar.model.rotation.y += diff * Math.min(1, dt * 10);
@@ -358,10 +467,9 @@ export class Character3DManager {
       avatar.mixer.update(dt);
       avatar.model.updateMatrixWorld(true);
 
-      const u = this.L.unit;
       const isKneeling = ch.state === 1;
 
-      // ติดตามตำแหน่งฝ่ามือ 3D จริง เพื่อให้กระทงขยับขึ้นลงตามจังหวะเดินและนั่งอย่างเป็นธรรมชาติ
+      // ติดตามตำแหน่งฝ่ามือ 3D จริง เพื่อให้กระทง/ถ้วยเทียนวางอยู่บนฝ่ามือพอดีเป๊ะ
       if (avatar.rightHand && avatar.leftHand) {
         const rPos = new THREE.Vector3();
         const lPos = new THREE.Vector3();
@@ -369,27 +477,43 @@ export class Character3DManager {
         avatar.leftHand.getWorldPosition(lPos);
         const mid = rPos.clone().add(lPos).multiplyScalar(0.5);
 
-        if (isKneeling) {
-          // ตอนนั่งคุกเข่าหันหน้าตรง กระทงอยู่ด้านหน้าลำตัว/ตักเหนือผิวน้ำ
-          ch.customHandPos = {
-            x: ch.x,
-            y: -mid.y + 10 * u,
-          };
-        } else {
-          // ตอนเดินหันขวา กระทงยื่นไปข้างหน้าตามทิศเดิน
-          const forwardOffset = 18 * u;
-          ch.customHandPos = {
-            x: mid.x + forwardOffset,
-            y: -mid.y - 6 * u,
-          };
-        }
+        // วางกึ่งกลางถ้วยเทียนให้อยู่บนฝ่ามือพอดีเป๊ะ
+        // -mid.y คือพิกัด Y บน Canvas ของฝ่ามือ
+        // ปรับ -2 * u ให้ก้นฐานถ้วยเทียน/กระทงสัมผัสกับฝ่ามือทั้งสองข้างอย่างแนบสนิท
+        ch.customHandPos = {
+          x: mid.x,
+          y: -mid.y - 2 * u,
+        };
       } else {
-        const handYOffset = isKneeling ? 50 * u : 138 * u;
-        const handXOffset = isKneeling ? 0 : 44 * u;
+        const isFacingFront = isKneeling || ch.state === 2 || ch.walkingUp;
+        const handYOffset = isFacingFront ? 60 * u : 105 * u;
+        const handXOffset = isFacingFront ? 0 : 20 * u * (ch.dir || 1);
         ch.customHandPos = {
           x: ch.x + handXOffset,
           y: ch.y - handYOffset,
         };
+      }
+
+      // ติดตามตำแหน่งศีรษะ (Head Bone) เพื่อให้ป้ายชื่ออยู่ใกล้ชิดเหนือหัวตัวละครพอดี (ทั้งตอนยืนและคุกเข่า)
+      let headBone = avatar.head;
+      if (!headBone) {
+        avatar.model.traverse((child) => {
+          const n = child.name || '';
+          if (n === 'mixamorigHead' || n === 'J_Bip_C_Head' || n === 'Head' || n.toLowerCase().includes('head')) headBone = child;
+        });
+        avatar.head = headBone;
+      }
+
+      if (headBone) {
+        const headPos = new THREE.Vector3();
+        headBone.getWorldPosition(headPos);
+        // ใน Three.js OrthographicCamera: canvasY = -headPos.y
+        // -28 * u วางกึ่งกลางป้ายชื่อเหนือกระดูกศีรษะให้พอดีกับทรงผม/หูแมว
+        ch.customHeadY = -headPos.y - 28 * u;
+      } else {
+        const isKneelingState = ch.state === 1 || ch.state === 2;
+        const h = (isKneelingState ? 135 : 220) * u * (this.characterScale || 1.0);
+        ch.customHeadY = ch.y - (h + 20 * u);
       }
     }
 

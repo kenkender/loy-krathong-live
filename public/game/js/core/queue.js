@@ -42,5 +42,9 @@ export class JobQueue {
   clear() {
     this.items.length = 0;
   }
+
+  prepend(job) {
+    if (job) this.items.unshift(job);
+  }
 }
 

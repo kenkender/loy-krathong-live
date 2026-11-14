@@ -3,49 +3,132 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>แผงควบคุม · ลอยกระทง Live</title>
+  <title>Live Stage Studio · แผงควบคุมระบบ</title>
   <link rel="stylesheet" href="css/admin.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="logo">ลอยกระทง<span>Live Control</span></div>
-    <div class="top-right">
-      <span id="modeBadge" class="badge">—</span>
-      <span id="overall" class="status-pill" data-level="ok">กำลังโหลด…</span>
-      <a class="btn ghost" href="/game/?debug=1" target="_blank">เปิดหน้าเกม</a>
+  <div class="app-shell">
+    <!-- Left Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand-box">
+        <div class="brand-mark">3D</div>
+        <div class="brand-text">
+          <strong>Stage Studio</strong>
+          <span>LIVE INTERACTIVE CONTROL</span>
+        </div>
+      </div>
+
+      <nav class="side-nav" id="sideNav">
+        <div class="nav-group-label">STAGE &amp; 3D ENGINE</div>
+        <button class="nav-item active" data-target="scene">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
+          <span>โหมดงานและฉาก</span>
+          <small>ลอยกระทง · ไหว้พระ · ปาร์ตี้</small>
+        </button>
+
+        <button class="nav-item" data-target="camera">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+          <span>มุมกล้องและทิศทาง</span>
+          <small>3D Camera &amp; ทิศทางเดิน</small>
+        </button>
+
+        <button class="nav-item" data-target="characters">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>ตัวละครและวัตถุ 3D</span>
+          <small>คลังโมเดล · เสกเข้าฉาก</small>
+        </button>
+
+        <div class="nav-group-label">STREAM &amp; TELEMETRY</div>
+        <button class="nav-item" data-target="source">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M2 16.1A5 5 0 0 1 5.9 20M2 12.05A9 9 0 0 1 9.95 20M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/><line x1="2" y1="20" x2="2.01" y2="20"/></svg>
+          <span>เชื่อมต่อ TikTok &amp; ทดสอบ</span>
+          <small>Live Source · จำลองของขวัญ</small>
+        </button>
+
+        <button class="nav-item" data-target="monitor">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span>มอนิเตอร์และบัญชีทำบุญ</span>
+          <small>เหตุการณ์สด · รายงาน CSV</small>
+        </button>
+      </nav>
+
+      <div class="side-footer">
+        <a class="side-link primary" href="/converter/" target="_blank">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          <span>สตูดิโอแปลงไฟล์ 3D</span>
+        </a>
+        <a class="side-link" href="/game/?debug=1" target="_blank">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          <span>เปิดหน้าจอเกมสด</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Detail Area -->
+    <div class="main-area">
+      <header class="topbar">
+        <div class="topbar-title">
+          <h1 id="viewTitle">โหมดงานและฉาก (Scene &amp; Activity Studio)</h1>
+          <p id="viewSubtitle">สลับโหมดกิจกรรมเป็นงานลอยกระทง ไหว้พระขอพร หรือปาร์ตี้แดนซ์ฟลอร์ได้ทันทีโดยไม่ต้องสร้างโปรเจกต์ใหม่</p>
+        </div>
+        <div class="top-right">
+          <span id="activeModePill" class="badge">MODE: LOY KRATHONG</span>
+          <span id="modeBadge" class="badge">—</span>
+          <span id="overall" class="status-pill" data-level="ok">กำลังโหลด…</span>
+        </div>
+      </header>
+
+      <!-- Live Telemetry Bar -->
+      <section id="kpis" class="kpis"></section>
+
+      <!-- Tab 1: Scene & Activity Mode View -->
+      <main class="view-section active" id="view-scene" data-view="scene"></main>
+
+      <!-- Tab 2: Camera & Stage Direction View -->
+      <main class="view-section" id="view-camera" data-view="camera"></main>
+
+      <!-- Tab 3: Characters & 3D Props View -->
+      <main class="view-section" id="view-characters" data-view="characters"></main>
+
+      <!-- Tab 4: TikTok Source & Gift Simulator View -->
+      <main class="view-section" id="view-source" data-view="source"></main>
+
+      <!-- Tab 5: Live Monitor, Health & Ledger View -->
+      <main class="view-section" id="view-monitor" data-view="monitor">
+        <div class="detail-grid cols-12">
+          <section class="panel span-5">
+            <div class="panel-head">
+              <h2>สุขภาพระบบและการแจ้งเตือน</h2>
+              <small>System Health</small>
+            </div>
+            <ul id="components" class="components"></ul>
+            <h3>ประวัติการแจ้งเตือน</h3>
+            <ul id="alerts" class="alerts"></ul>
+          </section>
+
+          <section class="panel span-7">
+            <div class="panel-head">
+              <h2>บัญชีของขวัญและเงินทำบุญ</h2>
+              <small>Gift Ledger</small>
+            </div>
+            <div id="ledger"></div>
+            <h3>บันทึกระบบล่าสุด</h3>
+            <ul id="logs" class="logs"></ul>
+          </section>
+
+          <section class="panel span-12">
+            <div class="panel-head">
+              <h2>เหตุการณ์สดจากผู้ชม</h2>
+              <small id="eventCount">0 / นาที</small>
+            </div>
+            <ul id="events" class="events"></ul>
+          </section>
+        </div>
+      </main>
     </div>
-  </header>
-
-  <main class="grid">
-    <section id="kpis" class="kpis"></section>
-
-    <section class="panel">
-      <h2>สุขภาพระบบ</h2>
-      <ul id="components" class="components"></ul>
-      <h3>การแจ้งเตือน</h3>
-      <ul id="alerts" class="alerts"></ul>
-    </section>
-
-    <section class="panel">
-      <h2>ควบคุม</h2>
-      <div id="controls"></div>
-    </section>
-
-    <section class="panel tall">
-      <h2>เหตุการณ์สด <small id="eventCount"></small></h2>
-      <ul id="events" class="events"></ul>
-    </section>
-
-    <section class="panel tall">
-      <h2>บัญชีของขวัญและเงินทำบุญ</h2>
-      <div id="ledger"></div>
-      <h3>บันทึกระบบ</h3>
-      <ul id="logs" class="logs"></ul>
-    </section>
-  </main>
+  </div>
 
   <div id="toast" class="toast"></div>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
-
