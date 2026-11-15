@@ -1143,6 +1143,9 @@
       files.sort((a, b) => {
         const aExt = a.name.split('.').pop().toLowerCase();
         const bExt = b.name.split('.').pop().toLowerCase();
+        const isModel = (ext) => ['vrm', 'glb', 'gltf', 'obj', 'dae', 'stl', 'ply'].includes(ext);
+        if (isModel(aExt) && aExt !== 'fbx' && bExt === 'fbx') return -1;
+        if (isModel(bExt) && bExt !== 'fbx' && aExt === 'fbx') return 1;
         if (aExt === 'vrm' && bExt !== 'vrm') return -1;
         if (bExt === 'vrm' && aExt !== 'vrm') return 1;
         if (a.name.toLowerCase().includes('standing')) return -1;
@@ -1217,7 +1220,28 @@
       }
 
       if (!mainModel) {
-        statusBox.innerText = '❌ ไม่พบโครงสร้างโมเดล 3D ในไฟล์ที่เลือก';
+        if (pendingMixamoSources.length > 0) {
+          window._cachedPendingClips = pendingMixamoSources;
+          statusBox.innerHTML = `⚠️ <b>ตรวจพบไฟล์ท่าทาง (${pendingMixamoSources.length} ท่า) แต่ไม่พบตัวละคร 3D</b><br>` +
+            `<div style="color:#fcd34d;margin:6px 0;line-height:1.45;">เนื่องจากคุณดาวน์โหลดจาก Mixamo แบบ <b>"Without Skin"</b> จึงมีเฉพาะข้อมูลท่าทางเต้น แต่ไม่มีรูปร่างตัวละครข้างในครับ</div>` +
+            `<div style="font-size:0.8rem;color:#cbd5e1;line-height:1.5;margin-top:6px;">` +
+            `👉 <b>วิธีใช้งานที่ถูกต้อง:</b><br>` +
+            `1. ลากไฟล์ตัวละคร <b>.vrm</b> (เช่น AvatarSample.vrm) หรือ <b>.glb</b> เข้ามาก่อน<br>` +
+            `2. จากนั้นกดปุ่ม <code>➕ โหลดท่าเต้นเพิ่ม</code> แล้วเลือกไฟล์ท่านี้<br>` +
+            `<i>(หรือถ้าต้องการโหลดตัวละครพร้อมท่าเป็นไฟล์เดียวจาก Mixamo ให้เลือก Skin: <b>With Skin</b> ครับ)</i>` +
+            `</div>` +
+            `<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap;">` +
+            `<button id="applyToVroidBtn" class="btn btn-primary" style="font-size:0.78rem;padding:7px 10px;">👤 ลองใส่ท่านี้กับตัวละคร VRoid ในระบบ</button>` +
+            `<button id="applyToAmyBtn" class="btn btn-secondary" style="font-size:0.78rem;padding:7px 10px;">👤 ลองใส่ท่านี้กับตัวละคร Amy/Kate</button>` +
+            `</div>`;
+
+          setTimeout(() => {
+            document.getElementById('applyToVroidBtn')?.addEventListener('click', () => applyPendingToExistingModel('/models/vroid.glb', true));
+            document.getElementById('applyToAmyBtn')?.addEventListener('click', () => applyPendingToExistingModel('/models/amy.glb', false));
+          }, 50);
+        } else {
+          statusBox.innerText = '❌ ไม่พบโครงสร้างโมเดล 3D ในไฟล์ที่เลือก';
+        }
         return;
       }
 
@@ -1267,6 +1291,79 @@
       } else {
         const rigType = isMainModelVRM ? 'VRoid/VRM Rig' : 'Mixamo Rig';
         statusBox.innerHTML = `✅ โหลดโมเดลสำเร็จ! (${rigType}, ${boneCount} ข้อต่อ, ${loadedClips.length} ท่าทาง) — กดปุ่มพรีวิวท่าทางทางซ้ายได้เลยครับ`;
+      }
+    }
+
+    async function applyPendingToExistingModel(modelUrl, isVRM) {
+      statusBox.innerHTML = '⏳ กำลังโหลดตัวละครจากระบบและเชื่อมกระดูกท่าทาง...';
+      try {
+        if (mainModel) {
+          scene.remove(mainModel);
+          mainModel = null;
+        }
+        if (mixer) {
+          mixer.stopAllAction();
+          mixer = null;
+        }
+
+        const loader = new GLTFLoader();
+        const gltf = await loader.loadAsync(modelUrl);
+        mainModel = gltf.scene;
+        isMainModelVRM = isVRM;
+
+        mainModel.traverse((child) => {
+          if (child.isMesh || child.isSkinnedMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            child.frustumCulled = false;
+          }
+        });
+
+        // Normalize position/scale
+        mainModel.updateMatrixWorld(true);
+        const box = new THREE.Box3().setFromObject(mainModel);
+        const size = box.getSize(new THREE.Vector3());
+        if (size.y > 10) mainModel.scale.setScalar(0.01);
+        mainModel.updateMatrixWorld(true);
+        box.setFromObject(mainModel);
+        const center = box.getCenter(new THREE.Vector3());
+        mainModel.position.x = -center.x;
+        mainModel.position.z = -center.z;
+        mainModel.position.y = -box.min.y;
+
+        scene.add(mainModel);
+
+        loadedClips = [];
+        if (gltf.animations) {
+          loadedClips = gltf.animations.map((c) => c.clone());
+        }
+
+        if (window._cachedPendingClips) {
+          for (const entry of window._cachedPendingClips) {
+            let finalClip = entry.clip;
+            if (isMainModelVRM) {
+              finalClip = retargetMixamoClipToVRM(entry.clip, entry.sourceScene, mainModel);
+            } else {
+              finalClip = normalizeMixamoClipForModel(entry.clip, mainModel);
+            }
+            loadedClips.push(finalClip);
+          }
+        }
+
+        ensureKneelingIdle();
+        refreshAnimButtons();
+        setExportButtonsEnabled(true);
+
+        if (loadedClips.length > 0) {
+          const last = loadedClips[loadedClips.length - 1];
+          const btn = Array.from(animButtonsEl.querySelectorAll('.anim-play-btn')).find((b) => b.dataset.name === last.name);
+          playClip(last, btn);
+        }
+
+        statusBox.innerHTML = `🎉 โหลดตัวละครและใส่ท่าทางสำเร็จ! (${loadedClips.length} ท่า) — สามารถกดเปลี่ยนชื่อ หรือกดบันทึกเข้าเกมได้เลยครับ`;
+      } catch (e) {
+        console.error(e);
+        statusBox.innerHTML = `❌ โหลดตัวละครไม่สำเร็จ: ${e.message}`;
       }
     }
 
