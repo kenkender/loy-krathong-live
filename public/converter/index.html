@@ -164,31 +164,174 @@
       border-left: 3px solid #10b981;
     }
     .anim-buttons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      max-height: 180px;
+      overflow-y: auto;
+      padding-right: 4px;
     }
-    .anim-btn {
-      background: #334155;
-      color: #e2e8f0;
-      padding: 7px 9px;
+    .anim-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #0f172a;
+      border: 1px solid #334155;
       border-radius: 6px;
+      padding: 3px 5px;
+      transition: border-color 0.15s ease;
+    }
+    .anim-row:hover {
+      border-color: #475569;
+    }
+    .anim-play-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #e2e8f0;
+      text-align: left;
       font-size: 0.8rem;
       cursor: pointer;
-      border: 1px solid #475569;
-      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 6px;
+      border-radius: 4px;
+      overflow: hidden;
       white-space: nowrap;
+    }
+    .anim-play-btn span:first-child {
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .anim-btn:hover {
-      background: #475569;
+    .anim-play-btn:hover {
+      background: #334155;
     }
-    .anim-btn.active {
+    .anim-play-btn.active {
       background: #0284c7;
+      color: white;
+      font-weight: 600;
+    }
+    .anim-dur {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      margin-left: 6px;
+      flex-shrink: 0;
+    }
+    .anim-play-btn.active .anim-dur {
+      color: #bae6fd;
+    }
+    .anim-action-btn {
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #94a3b8;
+      border-radius: 4px;
+      padding: 4px 7px;
+      font-size: 0.76rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+    }
+    .anim-action-btn:hover {
+      color: #38bdf8;
+      border-color: #38bdf8;
+      background: #0f172a;
+    }
+    .anim-del-btn:hover {
+      border-color: #ef4444;
+      color: #f87171;
+      background: #450a0a;
+    }
+    .mixamo-guide {
+      background: #0f172a;
+      border: 1px dashed #334155;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 4px;
+    }
+    dialog::backdrop {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(4px);
+    }
+    .modal-dialog {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 12px;
+      padding: 0;
+      color: #f1f5f9;
+      max-width: 420px;
+      width: 92vw;
+      margin: auto;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+    .modal-content {
+      padding: 18px 20px;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .modal-header h3 {
+      font-size: 1rem;
+      color: #38bdf8;
+    }
+    .close-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .close-btn:hover { color: white; }
+    .preset-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .preset-btn {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .preset-btn:hover {
+      background: #334155;
       border-color: #38bdf8;
       color: white;
-      font-weight: bold;
+    }
+    .viewport.dragover {
+      outline: 3px dashed #38bdf8;
+      outline-offset: -8px;
+    }
+    .viewport-drop-hint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(15, 23, 42, 0.92);
+      border: 2px dashed #38bdf8;
+      padding: 20px 28px;
+      border-radius: 12px;
+      color: #38bdf8;
+      font-size: 1.05rem;
+      font-weight: 600;
+      pointer-events: none;
+      display: none;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 10;
+      text-align: center;
+    }
+    .viewport.dragover .viewport-drop-hint {
+      display: block;
     }
     .status-box {
       background: #0f172a;
@@ -304,12 +447,33 @@
         ✨ ใส่ท่าลอยกระทงครบ 6 ท่าให้ตัวละครนี้ทันที (1-Click)
       </button>
 
+      <button id="appendAnimBtn" class="btn btn-primary" disabled style="width:100%;background:#0284c7;padding:10px 14px;box-shadow:0 3px 10px rgba(2,132,199,0.3);" title="โหลดท่าเต้นหรือท่าทางเพิ่มจากไฟล์ .FBX หรือ .GLB เข้ามาใส่ตัวละครนี้">
+        ➕ โหลดท่าเต้น / ท่าทางเพิ่มจากไฟล์ (.fbx, .glb)
+      </button>
+      <input type="file" id="animFileInput" class="file-input" multiple accept=".fbx,.glb,.gltf">
+
       <div class="section-title">ไฟล์และท่าทางที่โหลด (<span id="fileCount">0</span>)</div>
       <div class="file-list" id="fileList"></div>
 
-      <div class="section-title">พรีวิวท่าทางอนิเมชัน</div>
+      <div class="section-title">พรีวิวและจัดการท่าทางอนิเมชัน</div>
       <div class="anim-buttons" id="animButtons">
-        <span style="grid-column: 1 / -1; font-size: 0.78rem; color: #64748b;">(ปุ่มท่าทางจะแสดงหลังโหลดไฟล์ที่มีอนิเมชัน)</span>
+        <span style="font-size: 0.78rem; color: #64748b;">(ปุ่มท่าทางจะแสดงหลังโหลดไฟล์ หรือกดปุ่มใส่ท่าด้านบน)</span>
+      </div>
+
+      <div class="mixamo-guide">
+        <div style="font-weight:600;color:#38bdf8;margin-bottom:6px;display:flex;align-items:center;gap:6px;font-size:0.8rem;">
+          💡 วิธีโหลดท่าเต้น/ท่าทางฟรีจาก Mixamo.com:
+        </div>
+        <ol style="margin-left:16px;display:flex;flex-direction:column;gap:4px;color:#cbd5e1;font-size:0.75rem;line-height:1.45;">
+          <li>เข้าเว็บ <a href="https://www.mixamo.com" target="_blank" style="color:#38bdf8;text-decoration:underline;">mixamo.com</a> (ใช้บัญชี Google ฟรี)</li>
+          <li>เลือกแท็บ <b>Animations</b> ค้นหาท่า เช่น <i>Dance, Hip Hop, Samba, Walk, Taunt</i></li>
+          <li>กด <b>Download</b> (มุมขวาบน) เลือก:
+            <br>• Format: <b>FBX Binary (.fbx)</b>
+            <br>• Skin: <b>Without Skin</b> (ไฟล์เล็ก ~200 KB โหลดไวมาก)
+            <br>• In Place: <b>ติ๊กถูก ✓</b> <i>(สำหรับท่าเต้น/ท่ายืน)</i>
+          </li>
+          <li><b>ลากไฟล์ .fbx มาปล่อยใส่หน้าต่าง 3D นี้</b> หรือกดปุ่ม <code>➕ โหลดท่าเต้นเพิ่ม</code> ระบบจะแปลงกระดูกเชื่อมให้ทันที!</li>
+        </ol>
       </div>
 
       <div class="export-panel">
@@ -344,13 +508,44 @@
       </div>
     </div>
 
-    <div class="viewport">
+    <div class="viewport" id="viewport">
       <canvas id="renderCanvas"></canvas>
+      <div class="viewport-drop-hint">
+        📥 ปล่อยไฟล์ .FBX หรือ .GLB ตรงนี้เพื่อเพิ่มท่าทางให้ตัวละครทันที!
+      </div>
       <div class="viewport-overlay">
         คลิกซ้ายลาก = หมุนมุมมอง | คลิกขวาลาก = เลื่อนตำแหน่ง | ลูกกลิ้งเมาส์ = ซูมเข้า/ออก
       </div>
     </div>
   </div>
+
+  <dialog id="renameModal" class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>✏ เปลี่ยนชื่อท่าทางอนิเมชัน</h3>
+        <button id="closeModalBtn" class="close-btn" type="button">&times;</button>
+      </div>
+      <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:12px;">
+        ชื่อท่าทางจะกำหนดว่าตัวละครจะใช้ท่านี้ในสถานการณ์ไหนของเกม:
+      </p>
+      <div class="preset-grid">
+        <button type="button" class="preset-btn" data-preset="Party_Dance">💃 Party_Dance (ท่าเต้นปาร์ตี้ / เมื่อส่งของขวัญ)</button>
+        <button type="button" class="preset-btn" data-preset="Walking_Krathong">🚶 Walking_Krathong (ท่าเดินถือกระทง/เทียน)</button>
+        <button type="button" class="preset-btn" data-preset="Walking_Empty">🚶 Walking_Empty (ท่าเดินตัวเปล่า)</button>
+        <button type="button" class="preset-btn" data-preset="Standing">🧍 Standing (ท่ายืนรอ/ยืนปกติ)</button>
+        <button type="button" class="preset-btn" data-preset="Praying">🙏 Praying (ท่าพนมมือไหว้)</button>
+        <button type="button" class="preset-btn" data-preset="Kneeling_Down">🧎 Kneeling_Down (ท่าคุกเข่ากราบ)</button>
+      </div>
+      <div style="margin-top:12px;">
+        <label style="font-size:0.78rem;color:#94a3b8;display:block;margin-bottom:4px;">หรือกำหนดชื่อเอง:</label>
+        <input type="text" id="renameInput" class="name-input" style="width:100%;" placeholder="เช่น Taunt, Cheer, Wave">
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">
+        <button type="button" id="cancelRenameBtn" class="btn btn-secondary">ยกเลิก</button>
+        <button type="button" id="confirmRenameBtn" class="btn btn-primary">บันทึกชื่อ</button>
+      </div>
+    </div>
+  </dialog>
 
   <script type="module">
     import * as THREE from 'three';
@@ -367,12 +562,20 @@
     import { PLYExporter } from 'three/addons/exporters/PLYExporter.js';
 
     const canvas = document.getElementById('renderCanvas');
+    const viewport = document.getElementById('viewport');
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
     const statusBox = document.getElementById('statusBox');
     const fileListEl = document.getElementById('fileList');
     const fileCountEl = document.getElementById('fileCount');
     const animButtonsEl = document.getElementById('animButtons');
+    const appendAnimBtn = document.getElementById('appendAnimBtn');
+    const animFileInput = document.getElementById('animFileInput');
+    const renameModal = document.getElementById('renameModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const renameInput = document.getElementById('renameInput');
+    const cancelRenameBtn = document.getElementById('cancelRenameBtn');
+    const confirmRenameBtn = document.getElementById('confirmRenameBtn');
     const outNameInput = document.getElementById('outNameInput');
     const roleSelect = document.getElementById('roleSelect');
     const sendToGameBtn = document.getElementById('sendToGameBtn');
@@ -587,10 +790,42 @@
       if (lower.includes('praying')) return 'Praying';
       if (lower.includes('standing up') || lower.includes('standing_up') || lower.includes('stand up')) return 'Standing_Up';
       if (lower.includes('standing idle') || lower.includes('standing_idle')) return 'Standing_Idle';
-      if (lower.includes('standing')) return 'Standing';
+      if (lower.includes('standing') || lower.includes('idle')) return 'Standing';
       if (lower.includes('walking_empty') || lower.includes('walking empty')) return 'Walking_Empty';
-      if (lower.includes('walking')) return 'Walking_Krathong';
+      if (lower.includes('walking') || lower.includes('walk')) return 'Walking_Krathong';
+      if (lower.includes('dance') || lower.includes('dancing') || lower.includes('hiphop') || lower.includes('samba') || lower.includes('party')) return 'Party_Dance';
       return filename.replace(/\.[a-z0-9]+$/i, '').replace(/^[a-z0-9]+_/i, '');
+    }
+
+    // Normalize bone track names for standard Mixamo/GLTF models
+    function normalizeMixamoClipForModel(clip, targetScene) {
+      const newTracks = [];
+      for (const track of clip.tracks) {
+        const dotIdx = track.name.indexOf('.');
+        if (dotIdx === -1) {
+          newTracks.push(track.clone());
+          continue;
+        }
+        const rawNodeName = track.name.slice(0, dotIdx);
+        const cleanNodeName = rawNodeName.replace(/^.*[:|]/, '');
+        const prop = track.name.slice(dotIdx + 1);
+
+        let targetNode = targetScene.getObjectByName(rawNodeName) || targetScene.getObjectByName(cleanNodeName);
+        if (!targetNode && cleanNodeName.startsWith('mixamorig')) {
+          const boneSuffix = cleanNodeName.replace('mixamorig', '');
+          targetScene.traverse((n) => {
+            if (!targetNode && (n.name === cleanNodeName || n.name.endsWith(boneSuffix))) {
+              targetNode = n;
+            }
+          });
+        }
+
+        const finalNodeName = targetNode ? targetNode.name : cleanNodeName;
+        const cloned = track.clone();
+        cloned.name = `${finalNodeName}.${prop}`;
+        newTracks.push(cloned);
+      }
+      return new THREE.AnimationClip(clip.name, clip.duration, newTracks);
     }
 
     // Event Handlers
@@ -600,10 +835,43 @@
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
       dropZone.classList.remove('dragover');
-      handleFiles(Array.from(e.dataTransfer.files));
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length === 0) return;
+      if (mainModel && files.every(f => f.name.match(/\.(fbx|anim)$/i))) {
+        appendAnimationFiles(files);
+      } else {
+        handleFiles(files);
+      }
     });
     fileInput.addEventListener('change', (e) => {
       handleFiles(Array.from(e.target.files));
+    });
+
+    appendAnimBtn.addEventListener('click', () => animFileInput.click());
+    animFileInput.addEventListener('change', (e) => {
+      appendAnimationFiles(Array.from(e.target.files));
+      animFileInput.value = '';
+    });
+
+    viewport.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      viewport.classList.add('dragover');
+    });
+    viewport.addEventListener('dragleave', (e) => {
+      if (!viewport.contains(e.relatedTarget)) {
+        viewport.classList.remove('dragover');
+      }
+    });
+    viewport.addEventListener('drop', (e) => {
+      e.preventDefault();
+      viewport.classList.remove('dragover');
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length === 0) return;
+      if (mainModel) {
+        appendAnimationFiles(files);
+      } else {
+        handleFiles(files);
+      }
     });
 
     async function parseSingleFile(file) {
@@ -672,7 +940,7 @@
     function refreshAnimButtons() {
       animButtonsEl.innerHTML = '';
       if (!mainModel || loadedClips.length === 0) {
-        animButtonsEl.innerHTML = `<span style="grid-column: 1 / -1; font-size: 0.78rem; color: #64748b;">(โมเดลนี้ยังไม่มีท่าทาง — กดปุ่มสีม่วงด้านบนเพื่อใส่ท่าลอยกระทง 6 ท่าได้ทันที)</span>`;
+        animButtonsEl.innerHTML = `<span style="font-size: 0.78rem; color: #64748b;">(ยังไม่มีท่าทาง — กดปุ่มสีม่วงหรือกด '➕ โหลดท่าเต้นเพิ่ม' เพื่อใส่ท่าทาง)</span>`;
         return;
       }
 
@@ -682,13 +950,163 @@
       activeAction = null;
 
       loadedClips.forEach((clip, idx) => {
-        const btn = document.createElement('button');
-        btn.className = 'anim-btn';
-        btn.innerText = `▶ ${clip.name}`;
-        btn.onclick = () => playClip(clip, btn);
-        animButtonsEl.appendChild(btn);
-        if (idx === 0) playClip(clip, btn);
+        const row = document.createElement('div');
+        row.className = 'anim-row';
+
+        const playBtn = document.createElement('button');
+        playBtn.type = 'button';
+        playBtn.className = 'anim-play-btn';
+        playBtn.dataset.name = clip.name;
+        playBtn.innerHTML = `<span>▶ ${clip.name}</span><span class="anim-dur">${clip.duration.toFixed(1)}s</span>`;
+        playBtn.onclick = () => playClip(clip, playBtn);
+
+        const renameBtn = document.createElement('button');
+        renameBtn.type = 'button';
+        renameBtn.className = 'anim-action-btn';
+        renameBtn.title = 'เปลี่ยนชื่อท่าทาง';
+        renameBtn.innerHTML = '✏';
+        renameBtn.onclick = (e) => {
+          e.stopPropagation();
+          openRenameDialog(clip);
+        };
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'anim-action-btn anim-del-btn';
+        delBtn.title = 'ลบท่านี้';
+        delBtn.innerHTML = '✕';
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          if (confirm(`ต้องการลบท่า "${clip.name}" ใช่หรือไม่?`)) {
+            const index = loadedClips.indexOf(clip);
+            if (index !== -1) {
+              loadedClips.splice(index, 1);
+              refreshAnimButtons();
+              statusBox.innerHTML = `🗑 ลบท่า "${clip.name}" เรียบร้อย (เหลือ ${loadedClips.length} ท่า)`;
+            }
+          }
+        };
+
+        row.appendChild(playBtn);
+        row.appendChild(renameBtn);
+        row.appendChild(delBtn);
+        animButtonsEl.appendChild(row);
+
+        if (idx === 0) playClip(clip, playBtn);
       });
+    }
+
+    let clipToRename = null;
+    function openRenameDialog(clip) {
+      clipToRename = clip;
+      renameInput.value = clip.name;
+      renameModal.showModal();
+      renameInput.focus();
+      renameInput.select();
+    }
+
+    document.querySelectorAll('.preset-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        renameInput.value = btn.dataset.preset;
+      });
+      btn.addEventListener('dblclick', () => {
+        renameInput.value = btn.dataset.preset;
+        applyRename();
+      });
+    });
+
+    function applyRename() {
+      const newName = renameInput.value.trim();
+      if (!newName || !clipToRename) return;
+      clipToRename.name = newName;
+      renameModal.close();
+      refreshAnimButtons();
+      const updatedBtn = Array.from(animButtonsEl.querySelectorAll('.anim-play-btn')).find(b => b.dataset.name === newName);
+      if (updatedBtn) playClip(clipToRename, updatedBtn);
+      statusBox.innerHTML = `✓ เปลี่ยนชื่อท่าเป็น <strong>${newName}</strong> เรียบร้อยแล้ว`;
+      clipToRename = null;
+    }
+
+    confirmRenameBtn.addEventListener('click', applyRename);
+    cancelRenameBtn.addEventListener('click', () => renameModal.close());
+    closeModalBtn.addEventListener('click', () => renameModal.close());
+    renameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') applyRename();
+    });
+
+    async function appendAnimationFiles(files) {
+      if (!mainModel) {
+        statusBox.innerHTML = '⚠️ กรุณาโหลดโมเดลตัวละคร 3D เข้ามาก่อนเพิ่มท่าทางครับ';
+        return;
+      }
+      if (!files || files.length === 0) return;
+
+      statusBox.innerHTML = `⏳ กำลังโหลดและประมวลผลท่าทางจาก ${files.length} ไฟล์...`;
+      let addedCount = 0;
+      let lastAddedClip = null;
+
+      for (const file of files) {
+        try {
+          const parsed = await parseSingleFile(file);
+          if (!parsed.animations || parsed.animations.length === 0) {
+            const itemEl = document.createElement('div');
+            itemEl.className = 'file-item';
+            itemEl.innerHTML = `<span>${file.name}</span> <span style="color:#f59e0b;">ไม่มีท่าอนิเมชัน</span>`;
+            fileListEl.appendChild(itemEl);
+            continue;
+          }
+
+          for (const origClip of parsed.animations) {
+            let clip = origClip.clone();
+            const defaultClean = cleanAnimName(file.name);
+            if (parsed.animations.length === 1 || !clip.name || clip.name.startsWith('Armature') || clip.name === 'Take 001' || clip.name === 'mixamo.com') {
+              clip.name = defaultClean;
+            }
+
+            // Avoid name collision
+            let finalName = clip.name;
+            let dupIdx = 2;
+            while (loadedClips.some(c => c.name === finalName)) {
+              finalName = `${clip.name}_${dupIdx++}`;
+            }
+            clip.name = finalName;
+
+            let finalClip = clip;
+            if (isMainModelVRM) {
+              finalClip = retargetMixamoClipToVRM(clip, parsed.scene, mainModel);
+              finalClip.name = finalName;
+            } else {
+              finalClip = normalizeMixamoClipForModel(clip, mainModel);
+              finalClip.name = finalName;
+            }
+
+            loadedClips.push(finalClip);
+            lastAddedClip = finalClip;
+            addedCount++;
+
+            const itemEl = document.createElement('div');
+            itemEl.className = 'file-item loaded';
+            itemEl.innerHTML = `<span>➕ ${file.name}</span> <span style="color:#10b981;">✓ ${finalClip.name} (${finalClip.duration.toFixed(1)}s)</span>`;
+            fileListEl.appendChild(itemEl);
+          }
+        } catch (err) {
+          console.error(err);
+          statusBox.innerHTML = `❌ ไม่สามารถอ่านท่าจาก ${file.name}: ${err.message}`;
+        }
+      }
+
+      if (addedCount > 0) {
+        fileCountEl.innerText = fileListEl.children.length;
+        ensureKneelingIdle();
+        refreshAnimButtons();
+        if (lastAddedClip) {
+          const btn = Array.from(animButtonsEl.querySelectorAll('.anim-play-btn')).find(b => b.dataset.name === lastAddedClip.name);
+          playClip(lastAddedClip, btn);
+        }
+        statusBox.innerHTML = `🎉 เพิ่มท่าทางใหม่สำเร็จ <strong>${addedCount} ท่า</strong>! (รวมตอนนี้มี ${loadedClips.length} ท่า) — กดพรีวิว หรือกดบันทึกเข้าเกมได้เลยครับ`;
+      } else {
+        statusBox.innerHTML = '⚠️ ไม่พบท่าทางอนิเมชันในไฟล์ที่นำเข้า';
+      }
     }
 
     async function handleFiles(files) {
@@ -918,7 +1336,7 @@
 
     function playClip(clip, activeBtn) {
       if (!mixer) return;
-      document.querySelectorAll('.anim-btn').forEach((b) => b.classList.remove('active'));
+      document.querySelectorAll('.anim-play-btn').forEach((b) => b.classList.remove('active'));
       if (activeBtn) activeBtn.classList.add('active');
 
       const nextAction = mixer.clipAction(clip);
@@ -931,6 +1349,7 @@
 
     function setExportButtonsEnabled(enabled) {
       injectLoyKrathongBtn.disabled = !enabled;
+      appendAnimBtn.disabled = !enabled;
       sendToGameBtn.disabled = !enabled;
       downloadGlbBtn.disabled = !enabled;
       downloadObjBtn.disabled = !enabled;
