@@ -307,6 +307,113 @@
       border-color: #38bdf8;
       color: white;
     }
+    .anim-select-dialog {
+      max-width: 580px;
+      width: 95vw;
+    }
+    .anim-select-content {
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      max-height: 85vh;
+    }
+    .anim-select-list {
+      overflow-y: auto;
+      margin: 8px 0;
+      padding-right: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 52vh;
+    }
+    .quick-preset-btn {
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #cbd5e1;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 0.74rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .quick-preset-btn:hover {
+      background: #334155;
+      border-color: #38bdf8;
+      color: white;
+    }
+    .anim-group-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-top: 6px;
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .anim-card-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 9px 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .anim-card-item:hover {
+      border-color: #475569;
+      background: #1e293b80;
+    }
+    .anim-card-item.selected {
+      border-color: #0284c7;
+      background: #0284c712;
+    }
+    .anim-checkbox {
+      width: 17px;
+      height: 17px;
+      accent-color: #0284c7;
+      cursor: pointer;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+    .anim-card-info {
+      flex: 1;
+    }
+    .anim-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+    .anim-card-name {
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #f1f5f9;
+    }
+    .anim-card-badge {
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+    .badge-has {
+      background: #10b98120;
+      color: #34d399;
+      border: 1px solid #10b98140;
+    }
+    .badge-new {
+      background: #38bdf820;
+      color: #38bdf8;
+      border: 1px solid #38bdf840;
+    }
+    .anim-card-desc {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      line-height: 1.35;
+    }
     .viewport.dragover {
       outline: 3px dashed #38bdf8;
       outline-offset: -8px;
@@ -449,8 +556,8 @@
         รอเลือกไฟล์ 3D (.vrm, .fbx, .glb, .obj ฯลฯ)...
       </div>
 
-      <button id="injectLoyKrathongBtn" class="btn btn-magic" disabled title="ดึงท่าลอยกระทงทั้ง 6 ท่าจากระบบใส่ให้ตัวละคร VRoid (.vrm) หรือ Mixamo โดยไม่ต้องอัปโหลดไปเว็บอื่น">
-        ✨ ใส่ท่าลอยกระทงครบ 6 ท่าให้ตัวละครนี้ทันที (1-Click)
+      <button id="openAnimLibraryBtn" class="btn btn-magic" disabled style="width:100%;padding:11px 14px;" title="เปิดเมนูเลือกท่าทางสำเร็จรูปของเกม (เดินถือกระทง, ไหว้พระ, คุกเข่ากราบ, เต้นปาร์ตี้ ฯลฯ) มีตัวเลือกให้เลือกได้ตามใจชอบ">
+        🎭 เมนูเลือกเพิ่มท่าทาง (เลือกได้ว่าจะใส่ท่าไหนบ้าง)
       </button>
 
       <button id="appendAnimBtn" class="btn btn-primary" disabled style="width:100%;background:#0284c7;padding:10px 14px;box-shadow:0 3px 10px rgba(2,132,199,0.3);" title="โหลดท่าเต้นหรือท่าทางเพิ่มจากไฟล์ .FBX หรือ .GLB เข้ามาใส่ตัวละครนี้">
@@ -556,6 +663,45 @@
     </div>
   </dialog>
 
+  <dialog id="animSelectModal" class="modal-dialog anim-select-dialog">
+    <div class="anim-select-content">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-size:1.05rem;color:#38bdf8;display:flex;align-items:center;gap:6px;">
+            🎭 เมนูเลือกเพิ่มท่าทางให้ตัวละคร
+          </h3>
+          <p style="font-size:0.78rem;color:#94a3b8;margin-top:2px;">
+            ติ๊กเลือกท่าทางที่ต้องการให้ตัวละครใช้งานในเกม (สามารถเลือกเฉพาะท่าที่ต้องการได้)
+          </p>
+        </div>
+        <button id="closeAnimSelectBtn" class="close-btn" type="button">&times;</button>
+      </div>
+
+      <!-- Quick Preset Selection Bar -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 6px;padding:8px 10px;background:#0f172a;border:1px solid #334155;border-radius:8px;">
+        <span style="font-size:0.75rem;color:#94a3b8;align-self:center;margin-right:4px;">เลือกด่วน:</span>
+        <button type="button" id="selectTemplePresetBtn" class="quick-preset-btn">🌸 ชุดลอยกระทง & ไหว้พระ (6 ท่า)</button>
+        <button type="button" id="selectPartyPresetBtn" class="quick-preset-btn">💃 ชุดเต้นปาร์ตี้ (Party Dance)</button>
+        <button type="button" id="selectAllAnimBtn" class="quick-preset-btn" style="color:#38bdf8;">✓ เลือกทุกท่า</button>
+        <button type="button" id="deselectAllAnimBtn" class="quick-preset-btn" style="color:#ef4444;">✕ ล้างการเลือก</button>
+      </div>
+
+      <div class="anim-select-list" id="animSelectList">
+        <!-- Rendered dynamically by JS -->
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;border-top:1px solid #334155;padding-top:12px;">
+        <span id="selectedCountText" style="font-size:0.8rem;color:#38bdf8;font-weight:600;">เลือกแล้ว 0 ท่า</span>
+        <div style="display:flex;gap:8px;">
+          <button type="button" id="cancelAnimSelectBtn" class="btn btn-secondary">ยกเลิก</button>
+          <button type="button" id="applySelectedAnimBtn" class="btn btn-primary" style="background:linear-gradient(135deg,#0284c7 0%,#8b5cf6 100%);">
+            ✨ บันทึกและใส่ท่าที่เลือกลงในตัวละคร
+          </button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -578,6 +724,17 @@
     const fileListEl = document.getElementById('fileList');
     const fileCountEl = document.getElementById('fileCount');
     const animButtonsEl = document.getElementById('animButtons');
+    const openAnimLibraryBtn = document.getElementById('openAnimLibraryBtn');
+    const animSelectModal = document.getElementById('animSelectModal');
+    const closeAnimSelectBtn = document.getElementById('closeAnimSelectBtn');
+    const cancelAnimSelectBtn = document.getElementById('cancelAnimSelectBtn');
+    const applySelectedAnimBtn = document.getElementById('applySelectedAnimBtn');
+    const animSelectList = document.getElementById('animSelectList');
+    const selectedCountText = document.getElementById('selectedCountText');
+    const selectTemplePresetBtn = document.getElementById('selectTemplePresetBtn');
+    const selectPartyPresetBtn = document.getElementById('selectPartyPresetBtn');
+    const selectAllAnimBtn = document.getElementById('selectAllAnimBtn');
+    const deselectAllAnimBtn = document.getElementById('deselectAllAnimBtn');
     const appendAnimBtn = document.getElementById('appendAnimBtn');
     const animFileInput = document.getElementById('animFileInput');
     const renameModal = document.getElementById('renameModal');
@@ -588,7 +745,6 @@
     const outNameInput = document.getElementById('outNameInput');
     const roleSelect = document.getElementById('roleSelect');
     const sendToGameBtn = document.getElementById('sendToGameBtn');
-    const injectLoyKrathongBtn = document.getElementById('injectLoyKrathongBtn');
     const downloadGlbBtn = document.getElementById('downloadGlbBtn');
     const downloadObjBtn = document.getElementById('downloadObjBtn');
     const downloadGltfBtn = document.getElementById('downloadGltfBtn');
@@ -1391,11 +1547,232 @@
       }
     }
 
-    // 1-Click Inject Loy Krathong 6 Animations from built-in /models/amy.glb
-    injectLoyKrathongBtn.addEventListener('click', async () => {
+    // Built-in Game Animation Presets Library
+    const BUILTIN_ANIM_PRESETS = [
+      {
+        id: 'Walking_Krathong',
+        group: 'temple',
+        groupName: '🌸 ชุดท่าทางงานลอยกระทง & งานไหว้พระ (Temple & Festival)',
+        name: 'Walking_Krathong',
+        title: '🚶 ท่าเดินถือกระทง / ถือเทียน',
+        desc: 'ท่าเดินพนมมือถือกระทงหรือถ้วยเทียนเข้าฉาก ใช้เป็นท่าเดินหลักในงานลอยกระทงและงานไหว้พระ',
+        sourceFile: '/models/amy.glb',
+        sourceClipName: 'Walking_Krathong',
+      },
+      {
+        id: 'Walking_Empty',
+        group: 'temple',
+        groupName: '🌸 ชุดท่าทางงานลอยกระทง & งานไหว้พระ (Temple & Festival)',
+        name: 'Walking_Empty',
+        title: '🚶 ท่าเดินตัวเปล่า',
+        desc: 'ท่าเดินตัวเปล่าแบบสง่างาม สำหรับเดินเข้าฉากทั่วไป',
+        sourceFile: '/models/amy.glb',
+        sourceClipName: 'Walking_Empty',
+      },
+      {
+        id: 'Standing',
+        group: 'temple',
+        groupName: '🌸 ชุดท่าทางงานลอยกระทง & งานไหว้พระ (Temple & Festival)',
+        name: 'Standing',
+        title: '🧍 ท่ายืนรอ / ท่ายืนปกติ',
+        desc: 'ท่ายืนพักคอยในฉากอย่างเป็นธรรมชาติ',
+        sourceFile: '/models/amy.glb',
+        sourceClipName: 'Standing',
+      },
+      {
+        id: 'Praying',
+        group: 'temple',
+        groupName: '🌸 ชุดท่าทางงานลอยกระทง & งานไหว้พระ (Temple & Festival)',
+        name: 'Praying',
+        title: '🙏 ท่าพนมมือไหว้ / ขอพร',
+        desc: 'ท่าพนมมืออธิษฐานจิตหน้าแท่นบูชาพระ และตอนปล่อยกระทง',
+        sourceFile: '/models/amy.glb',
+        sourceClipName: 'Praying',
+      },
+      {
+        id: 'Kneeling_Down',
+        group: 'temple',
+        groupName: '🌸 ชุดท่าทางงานลอยกระทง & งานไหว้พระ (Temple & Festival)',
+        name: 'Kneeling_Down',
+        title: '🧎 ท่าคุกเข่ากราบพระ',
+        desc: 'ท่าคุกเข่ากราบพระสงบงดงามหน้าแท่นบูชา',
+        sourceFile: '/models/amy.glb',
+        sourceClipName: 'Kneeling_Down',
+      },
+      {
+        id: 'Kneeling_Idle',
+        group: 'temple',
+        groupName: '🌸 ชุดท่าทางงานลอยกระทง & งานไหว้พระ (Temple & Festival)',
+        name: 'Kneeling_Idle',
+        title: '🧘 ท่านั่งคุกเข่าพนมมือ',
+        desc: 'ท่านั่งคุกเข่าพนมมือสงบนิ่งฟังธรรมและขอพร',
+        sourceFile: '/models/amy.glb',
+        sourceClipName: 'Kneeling_Idle',
+      },
+      {
+        id: 'Party_Dance',
+        group: 'party',
+        groupName: '💃 ชุดท่าเต้นคอนเสิร์ต & ปาร์ตี้ (Concert & Party Dance)',
+        name: 'Party_Dance',
+        title: '💃 ท่าเต้นปาร์ตี้แดนซ์สนุกสนาน',
+        desc: 'ท่าเต้นแดนซ์ออกสเต็ปสนุกสนาน สำหรับโหมดปาร์ตี้ และเมื่อมีคนดูส่งของขวัญ',
+        sourceFile: '/models/kate.glb',
+        sourceClipName: 'Party_Dance',
+      },
+    ];
+
+    const sourceGltfCache = new Map();
+    async function loadSourceGltf(url) {
+      if (sourceGltfCache.has(url)) return sourceGltfCache.get(url);
+      const loader = new GLTFLoader();
+      const gltf = await loader.loadAsync(url);
+      sourceGltfCache.set(url, gltf);
+      return gltf;
+    }
+
+    function openAnimSelectModal() {
       if (!mainModel) return;
-      injectLoyKrathongBtn.disabled = true;
-      statusBox.innerHTML = '⏳ กำลังดึงท่าลอยกระทงทั้ง 6 ท่าและเชื่อมเข้ากับกระดูกตัวละครของคุณ...';
+      animSelectList.innerHTML = '';
+
+      let lastGroup = '';
+      BUILTIN_ANIM_PRESETS.forEach((preset) => {
+        if (preset.group !== lastGroup) {
+          lastGroup = preset.group;
+          const groupHeader = document.createElement('div');
+          groupHeader.className = 'anim-group-title';
+          groupHeader.innerText = preset.groupName;
+          animSelectList.appendChild(groupHeader);
+        }
+
+        const isCurrentlyLoaded = loadedClips.some((c) => c.name === preset.name);
+
+        const card = document.createElement('label');
+        card.className = `anim-card-item ${isCurrentlyLoaded ? 'selected' : ''}`;
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'anim-checkbox';
+        cb.value = preset.id;
+        cb.checked = isCurrentlyLoaded || loadedClips.length === 0;
+
+        const badgeHtml = isCurrentlyLoaded
+          ? `<span class="anim-card-badge badge-has">✓ มีในตัวละครแล้ว</span>`
+          : `<span class="anim-card-badge badge-new">➕ พร้อมเพิ่ม</span>`;
+
+        card.innerHTML = `
+          <div class="anim-card-info">
+            <div class="anim-card-header">
+              <span class="anim-card-name">${preset.title}</span>
+              ${badgeHtml}
+            </div>
+            <div class="anim-card-desc">${preset.desc}</div>
+          </div>
+        `;
+        card.prepend(cb);
+
+        cb.addEventListener('change', () => {
+          card.classList.toggle('selected', cb.checked);
+          updateSelectedCount();
+        });
+
+        animSelectList.appendChild(card);
+      });
+
+      // Also list any custom clips that are already loaded in loadedClips
+      const customClips = loadedClips.filter((c) => !BUILTIN_ANIM_PRESETS.some((p) => p.name === c.name));
+      if (customClips.length > 0) {
+        const groupHeader = document.createElement('div');
+        groupHeader.className = 'anim-group-title';
+        groupHeader.style.color = '#a855f7';
+        groupHeader.innerText = '📁 ท่าทางอื่นๆ ที่คุณโหลดเพิ่มเข้ามา (Custom/Imported):';
+        animSelectList.appendChild(groupHeader);
+
+        customClips.forEach((clip) => {
+          const card = document.createElement('label');
+          card.className = 'anim-card-item selected';
+
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.className = 'anim-checkbox';
+          cb.value = clip.name;
+          cb.checked = true;
+
+          card.innerHTML = `
+            <div class="anim-card-info">
+              <div class="anim-card-header">
+                <span class="anim-card-name">✨ ${clip.name} (${clip.duration.toFixed(1)}s)</span>
+                <span class="anim-card-badge badge-has">✓ มีในตัวละครแล้ว</span>
+              </div>
+              <div class="anim-card-desc">ท่าทางที่คุณนำเข้าจากไฟล์ภายนอก (.FBX / .GLB)</div>
+            </div>
+          `;
+          card.prepend(cb);
+
+          cb.addEventListener('change', () => {
+            card.classList.toggle('selected', cb.checked);
+            updateSelectedCount();
+          });
+
+          animSelectList.appendChild(card);
+        });
+      }
+
+      updateSelectedCount();
+      animSelectModal.showModal();
+    }
+
+    function updateSelectedCount() {
+      const checkedBoxes = animSelectList.querySelectorAll('.anim-checkbox:checked');
+      selectedCountText.innerText = `เลือกแล้ว ${checkedBoxes.length} ท่า`;
+    }
+
+    // Quick Preset Filter Buttons
+    selectTemplePresetBtn.addEventListener('click', () => {
+      animSelectList.querySelectorAll('.anim-card-item').forEach((card) => {
+        const cb = card.querySelector('.anim-checkbox');
+        const isTemple = BUILTIN_ANIM_PRESETS.some((p) => p.group === 'temple' && p.id === cb.value);
+        cb.checked = isTemple;
+        card.classList.toggle('selected', isTemple);
+      });
+      updateSelectedCount();
+    });
+
+    selectPartyPresetBtn.addEventListener('click', () => {
+      animSelectList.querySelectorAll('.anim-card-item').forEach((card) => {
+        const cb = card.querySelector('.anim-checkbox');
+        const isParty = cb.value === 'Party_Dance' || cb.value === 'Standing';
+        cb.checked = isParty;
+        card.classList.toggle('selected', isParty);
+      });
+      updateSelectedCount();
+    });
+
+    selectAllAnimBtn.addEventListener('click', () => {
+      animSelectList.querySelectorAll('.anim-card-item').forEach((card) => {
+        const cb = card.querySelector('.anim-checkbox');
+        cb.checked = true;
+        card.classList.add('selected');
+      });
+      updateSelectedCount();
+    });
+
+    deselectAllAnimBtn.addEventListener('click', () => {
+      animSelectList.querySelectorAll('.anim-card-item').forEach((card) => {
+        const cb = card.querySelector('.anim-checkbox');
+        cb.checked = false;
+        card.classList.remove('selected');
+      });
+      updateSelectedCount();
+    });
+
+    openAnimLibraryBtn.addEventListener('click', openAnimSelectModal);
+    closeAnimSelectBtn.addEventListener('click', () => animSelectModal.close());
+    cancelAnimSelectBtn.addEventListener('click', () => animSelectModal.close());
+
+    applySelectedAnimBtn.addEventListener('click', async () => {
+      if (!mainModel) return;
+      applySelectedAnimBtn.disabled = true;
+      applySelectedAnimBtn.innerText = '⏳ กำลังประมวลผลและเชื่อมกระดูก...';
 
       try {
         let hasSkeleton = false;
@@ -1406,37 +1783,76 @@
         });
 
         if (!hasSkeleton && boneCount === 0) {
-          statusBox.innerHTML = '❌ <b>ตัวละครไฟล์นี้ไม่มีโครงกระดูกข้างใน</b> (เกิดจากเว็บแปลงไฟล์ Aspose ตัดกระดูกทิ้ง)<br><br>👉 <b>วิธีแก้:</b> กรุณาลากไฟล์ <b>AvatarSample_G123.vrm</b> ตัวจริง (19 MB) จากโฟลเดอร์ <code>model vroid</code> หรือไฟล์ <b>.fbx ที่ดาวน์โหลดจาก Mixamo</b> เข้ามาแทนครับ';
+          alert('❌ ตัวละครนี้ไม่มีโครงกระดูกข้างใน ทำให้ใส่ท่าทางไม่ได้ กรุณาใช้ไฟล์ .vrm ตัวจริงหรือ .fbx จาก Mixamo ครับ');
           return;
         }
 
-        const loader = new GLTFLoader();
-        const sourceGltf = await loader.loadAsync('/models/amy.glb');
+        const checkedBoxes = Array.from(animSelectList.querySelectorAll('.anim-checkbox:checked'));
+        const selectedIds = new Set(checkedBoxes.map((cb) => cb.value));
 
-        loadedClips = [];
-        for (const origClip of sourceGltf.animations) {
-          if (isMainModelVRM) {
-            const retargeted = retargetMixamoClipToVRM(origClip, sourceGltf.scene, mainModel);
-            loadedClips.push(retargeted);
-          } else {
-            loadedClips.push(origClip.clone());
+        if (selectedIds.size === 0) {
+          if (!confirm('คุณไม่ได้เลือกท่าทางใดเลย ต้องการลบท่าทางทั้งหมดของตัวละครนี้ใช่หรือไม่?')) {
+            return;
           }
         }
 
+        const newLoadedClips = [];
+
+        // 1. Process Built-in Presets
+        for (const preset of BUILTIN_ANIM_PRESETS) {
+          if (!selectedIds.has(preset.id)) continue;
+
+          // If already in loadedClips, reuse it
+          const existing = loadedClips.find((c) => c.name === preset.name);
+          if (existing) {
+            newLoadedClips.push(existing);
+            continue;
+          }
+
+          // Otherwise load from source model
+          const sourceGltf = await loadSourceGltf(preset.sourceFile);
+          const origClip = sourceGltf.animations?.find((c) => c.name === preset.sourceClipName);
+          if (origClip) {
+            let finalClip = origClip.clone();
+            finalClip.name = preset.name;
+            if (isMainModelVRM) {
+              finalClip = retargetMixamoClipToVRM(origClip, sourceGltf.scene, mainModel);
+              finalClip.name = preset.name;
+            } else {
+              finalClip = normalizeMixamoClipForModel(origClip, mainModel);
+              finalClip.name = preset.name;
+            }
+            newLoadedClips.push(finalClip);
+          }
+        }
+
+        // 2. Process Custom / Existing Clips that were checked
+        for (const clip of loadedClips) {
+          const isPreset = BUILTIN_ANIM_PRESETS.some((p) => p.name === clip.name);
+          if (!isPreset && selectedIds.has(clip.name)) {
+            newLoadedClips.push(clip);
+          }
+        }
+
+        loadedClips = newLoadedClips;
         ensureKneelingIdle();
         refreshAnimButtons();
 
-        const autoItem = document.createElement('div');
-        autoItem.className = 'file-item loaded';
-        autoItem.innerHTML = `<span>✨ ชุดท่าลอยกระทงมาตรฐาน (6 ท่า)</span> <span style="color:#a855f7;">✓ เชื่อมกระดูกสำเร็จ</span>`;
-        fileListEl.appendChild(autoItem);
+        animSelectModal.close();
 
-        statusBox.innerHTML = `🎉 ใส่ท่าลอยกระทงครบ <strong>${loadedClips.length} ท่า</strong> สำเร็จแล้ว! กดปุ่ม <b>ดาวน์โหลด .GLB</b> ด้านล่างไปวางใน <code>public/models/</code> ได้เลยครับ`;
+        if (loadedClips.length > 0) {
+          const last = loadedClips[loadedClips.length - 1];
+          const btn = Array.from(animButtonsEl.querySelectorAll('.anim-play-btn')).find((b) => b.dataset.name === last.name);
+          playClip(last, btn);
+        }
+
+        statusBox.innerHTML = `🎉 อัปเดตท่าทางสำเร็จ! ตัวละครมีทั้งหมด <strong>${loadedClips.length} ท่า</strong> ที่เลือกไว้ — สามารถกดพรีวิว หรือส่งเข้าเกมได้เลยครับ`;
       } catch (err) {
         console.error(err);
-        statusBox.innerHTML = `❌ ดึงท่าไม่สำเร็จ: ${err.message}`;
+        alert('เกิดข้อผิดพลาดในการใส่ท่าทาง: ' + err.message);
       } finally {
-        injectLoyKrathongBtn.disabled = false;
+        applySelectedAnimBtn.disabled = false;
+        applySelectedAnimBtn.innerText = '✨ บันทึกและใส่ท่าที่เลือกลงในตัวละคร';
       }
     });
 
@@ -1454,7 +1870,7 @@
     }
 
     function setExportButtonsEnabled(enabled) {
-      injectLoyKrathongBtn.disabled = !enabled;
+      openAnimLibraryBtn.disabled = !enabled;
       appendAnimBtn.disabled = !enabled;
       sendToGameBtn.disabled = !enabled;
       downloadGlbBtn.disabled = !enabled;
