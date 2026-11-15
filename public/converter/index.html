@@ -374,14 +374,20 @@
       font-size: 0.82rem;
       color: #94a3b8;
     }
+    .name-row label {
+      width: 52px;
+      flex-shrink: 0;
+    }
     .name-input {
       flex: 1;
+      min-width: 0;
       background: #1e293b;
       border: 1px solid #475569;
       color: #f8fafc;
       padding: 6px 10px;
       border-radius: 6px;
       font-size: 0.85rem;
+      box-sizing: border-box;
     }
     .viewport {
       flex: 1;
@@ -480,7 +486,10 @@
         <div class="name-row">
           <label for="outNameInput">ชื่อไฟล์:</label>
           <input type="text" id="outNameInput" class="name-input" value="vroid" placeholder="เช่น vroid, kate, amy">
-          <select id="roleSelect" class="name-input" style="max-width:195px;">
+        </div>
+        <div class="name-row">
+          <label for="roleSelect">บทบาท:</label>
+          <select id="roleSelect" class="name-input">
             <option value="character">➕ เพิ่มเป็นตัวละครในฉาก (ไม่ระบุเพศ)</option>
             <option value="leftProp">ตั้งเป็น: วัตถุฉากซ้าย</option>
             <option value="rightProp">ตั้งเป็น: วัตถุฉากขวา</option>
